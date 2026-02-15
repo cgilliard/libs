@@ -5,7 +5,7 @@ BIN_DIR=target/bin
 
 mkdir -p ${BIN_DIR};
 
-COMMAND="${CC} -O3 \
+COMMAND="${CC} \
 	-mavx2 \
 	-fno-stack-clash-protection \
 	-nostdlib \

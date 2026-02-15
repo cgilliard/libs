@@ -1,5 +1,4 @@
 #define COMPRESS_IMPL
-#define COMPRESS_IO_IMPL
 #include "include/compress.h"
 
 __asm__(
@@ -53,12 +52,6 @@ void mmap(void **ret, void *addr, long length, long prot, long flags, long fd,
 	syscall(ret, 9, (long)addr, length, prot, flags, fd, offset);
 }
 
-static unsigned long strlen(const char *x) {
-	const char *y = x;
-	while (*x) x++;
-	return x - y;
-}
-
 void *memmove(void *dest, const void *src, unsigned long n);
 void *memmove(void *dest, const void *src, unsigned long n) {
 	unsigned char *d = (void *)((unsigned char *)dest + n);
@@ -68,7 +61,7 @@ void *memmove(void *dest, const void *src, unsigned long n) {
 }
 
 static long write_str(long fd, char *msg) {
-	long len = strlen(msg);
+	long len = compress_strlen(msg);
 	return write(fd, msg, len);
 }
 
@@ -106,7 +99,7 @@ static long write_num(int fd, long num) {
 
 	if (negative) *--p = '-';
 	len = (buf + sizeof(buf) - 1) - p;
-	written = write(fd, p, len);
+	written = compress_write_syscall(fd, p, len);
 	if (written < 0) return -1;
 	if ((unsigned long)written != len) return -1;
 	return 0;

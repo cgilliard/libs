@@ -12,34 +12,10 @@ int decompress_block(const void *in, unsigned len, void *out,
 #ifndef COMPRESS_IMPL_GUARD
 #define COMPRESS_IMPL_GUARD
 
-#define COMPRESS_STATIC_ASSERT(condition, message) \
-	typedef unsigned char static_assert_##message[(condition) ? 1 : -1]
-
-COMPRESS_STATIC_ASSERT(sizeof(unsigned char) == 1, u8_sizes_match);
-COMPRESS_STATIC_ASSERT(sizeof(char) == 1, i8_sizes_match);
-COMPRESS_STATIC_ASSERT(sizeof(unsigned short) == 2, u16_sizes_match);
-COMPRESS_STATIC_ASSERT(sizeof(short) == 2, i16_sizes_match);
-COMPRESS_STATIC_ASSERT(sizeof(unsigned) == 4, u32_sizes_match);
-COMPRESS_STATIC_ASSERT(sizeof(unsigned int) == 4, u32_expanded_sizes_match);
-COMPRESS_STATIC_ASSERT(sizeof(int) == 4, i32_sizes_match);
-COMPRESS_STATIC_ASSERT(sizeof(unsigned long) == 8, u64_sizes_match);
-COMPRESS_STATIC_ASSERT(sizeof(long) == 8, i64_sizes_match);
-COMPRESS_STATIC_ASSERT(sizeof(void *) == 8, os_64_bit);
-COMPRESS_STATIC_ASSERT(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__,
-		       little_endian);
-
-#ifndef EFAULT
 #define EFAULT 14
-#endif
-#ifndef EINVAL
 #define EINVAL 22
-#endif
-#ifndef EPROTO
 #define EPROTO 71
-#endif
-#ifndef EOVERFLOW
 #define EOVERFLOW 75
-#endif
 
 #define MAX_MATCH_LEN 256
 #define MIN_MATCH_LEN 4
@@ -79,7 +55,7 @@ COMPRESS_STATIC_ASSERT(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__,
 #define DIST_EXTRA_BITS_VALUE(code, actual_distance) \
 	((actual_distance) - (1 << ((code) & DIST_MASK)))
 
-#define MIN(a, b) ((a) - (((a) - (b)) & -((a) > (b))))
+#define min(a, b) ((a) - (((a) - (b)) & -((a) > (b))))
 #ifdef __TINYC__
 #define FLUSH_STREAM(buffer, bits_in_buffer, out_bit_offset, data)            \
 	do {                                                                  \
@@ -90,7 +66,7 @@ COMPRESS_STATIC_ASSERT(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__,
 		byte_pos = out_bit_offset >> 3;                               \
 		out_bit_offset += bits_in_buffer;                             \
 		bits_to_write = 8 - bit_offset;                               \
-		bits_to_write = MIN(bits_to_write, bits_in_buffer);           \
+		bits_to_write = min(bits_to_write, bits_in_buffer);           \
 		new_bits =                                                    \
 		    (unsigned char)(buffer & bitstream_masks[bits_to_write]); \
 		new_bits <<= bit_offset;                                      \
@@ -117,7 +93,7 @@ COMPRESS_STATIC_ASSERT(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__,
 		__builtin_prefetch(data + byte_pos, 1, 3);                    \
 		out_bit_offset += bits_in_buffer;                             \
 		bits_to_write = 8 - bit_offset;                               \
-		bits_to_write = MIN(bits_to_write, bits_in_buffer);           \
+		bits_to_write = min(bits_to_write, bits_in_buffer);           \
 		new_bits =                                                    \
 		    (unsigned char)(buffer & bitstream_masks[bits_to_write]); \
 		new_bits <<= bit_offset;                                      \
@@ -147,7 +123,7 @@ COMPRESS_STATIC_ASSERT(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__,
 		unsigned long new_bits, high;                                  \
 		unsigned long bit_offset = in_bit_offset;                      \
 		unsigned long bits_to_load = 64 - bits_in_buffer;              \
-		unsigned long end_byte = (bit_offset + bits_to_load + 8) >> 3; \
+		unsigned long end_byte = (bit_offset + bits_to_load + 7) >> 3; \
 		unsigned long byte_pos = bit_offset >> 3;                      \
 		unsigned char bit_remainder = bit_offset & 0x7;                \
 		unsigned long bytes_needed = end_byte - byte_pos;              \
@@ -238,18 +214,44 @@ static const unsigned long bitstream_masks[65] = {
     0x0FFFFFFFFFFFFFFFUL, 0x1FFFFFFFFFFFFFFFUL, 0x3FFFFFFFFFFFFFFFUL,
     0x7FFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL};
 
-#ifdef __TINYC__
-__inline static int compress_clz32(unsigned int x) {
-	int r;
-	__asm__("bsrl %1, %0" : "=r"(r) : "r"(x) : "cc");
-	return 31 - r;
+#ifdef __x86_64__
+__asm__(
+    ".section .text\n"
+    "compress_syscall:\n"
+    "push    %rbp\n"
+    "mov     %rdi, %rbp\n"
+    "mov     %rsi, %rax\n"
+    "mov     %rdx, %rdi\n"
+    "mov     %rcx, %rsi\n"
+    "mov     %r8,  %rdx\n"
+    "mov     %r9,  %r10\n"
+    "mov     16(%rsp), %r8\n"
+    "mov     24(%rsp), %r9\n"
+    "syscall\n"
+    "mov     %rax, 0(%rbp)\n"
+    "pop     %rbp\n"
+    "ret\n");
+
+void compress_syscall(void *ret, long sysno, long a0, long a1, long a2, long a3,
+		      long a4, long a5);
+#endif /* __x86_64__ */
+
+__inline static long compress_write_syscall(int fd, const void *buf,
+					    unsigned long len) {
+	long ret;
+#ifdef __x86_64__
+	compress_syscall(&ret, 1, fd, (long)buf, len, 0, 0, 0);
+#else
+	ret = 0;
+#endif /* !__x86_64__ */
+	return ret;
 }
-__inline static void *compress_memset(void *dest, int c, unsigned long n) {
-	char *tmp = dest;
-	while (n--) *tmp++ = (char)c;
-	return dest;
+
+__inline static unsigned long compress_strlen(const char *x) {
+	const char *y = x;
+	while (*x) x++;
+	return x - y;
 }
-#endif /* __TINYC__ */
 
 __inline static void *compress_memcpy(void *dest, const void *src,
 				      unsigned long n) {
@@ -272,7 +274,83 @@ __inline static void *compress_memcpy_movsb(void *dest, const void *src,
 	return dest;
 }
 
+__inline __attribute__((unused)) static long compress_write_str(long fd,
+								char *msg) {
+	long len = compress_strlen(msg);
+	return compress_write_syscall(fd, msg, len);
+}
+
+__inline __attribute__((unused)) static long compress_write_num(int fd,
+								long num) {
+	unsigned char buf[21];
+	unsigned char *p;
+	unsigned long len;
+	long written;
+	int negative = 0;
+
+	if (fd < 0) return -1;
+	p = buf + sizeof(buf) - 1;
+	*p = '\0';
+
+	if (num < 0) {
+		negative = 1;
+		if (num == ((long)(-0x7FFFFFFFFFFFFFFF - 1))) {
+			const char min_str[] = "-9223372036854775808";
+			len = sizeof(min_str) - 1;
+			written = compress_write_syscall(fd, min_str, len);
+			if (written < 0) return -1;
+			if ((unsigned long)written != len) return -1;
+			return 0;
+		}
+		num = -num;
+	}
+
+	if (num == 0)
+		*--p = '0';
+	else
+		while (num > 0) {
+			*--p = '0' + (num % 10);
+			num /= 10;
+		}
+
+	if (negative) *--p = '-';
+	len = (buf + sizeof(buf) - 1) - p;
+	written = compress_write_syscall(fd, p, len);
+	if (written < 0) return -1;
+	if ((unsigned long)written != len) return -1;
+	return 0;
+}
+
+#ifdef __TINYC__
+__inline static int compress_clz32(unsigned int x) {
+	int r;
+	__asm__("bsrl %1, %0" : "=r"(r) : "r"(x) : "cc");
+	return 31 - r;
+}
+__inline static void *compress_memset(void *dest, int c, unsigned long n) {
+	char *tmp = dest;
+	while (n--) *tmp++ = (char)c;
+	return dest;
+}
+#endif /* __TINYC__ */
+
 __inline static void compress_zero_memory(void *ptr, long len_bytes) {
+/*
+#ifdef __AVX2__
+char *p = (char *)ptr;
+char *end = p + len_bytes;
+__asm__ __volatile__(
+    "vpxor  %%ymm0, %%ymm0, %%ymm0\n\t"
+    "0:\n\t"
+    "vmovdqu %%ymm0, (%0)\n\t"
+    "add    $32, %0\n\t"
+    "cmp    %0, %1\n\t"
+    "jb     0b"
+    : "+r"(p)
+    : "r"(end)
+    : "ymm0", "cc", "memory");
+#else
+*/
 #ifdef __AVX2__
 	char *p = (char *)ptr;
 	char *end = p + len_bytes;
@@ -570,9 +648,9 @@ __inline static void compress_calculate_lengths(const unsigned *frequencies,
 __inline static void compress_calculate_codes(CodeLength *code_lengths,
 					      unsigned short count) {
 	unsigned i, j, code = 0;
-	unsigned length_count[CEIL(MAX_CODE_LENGTH + 1, 8)];
-	unsigned length_start[CEIL(MAX_CODE_LENGTH + 1, 8)];
-	unsigned length_pos[CEIL(MAX_CODE_LENGTH + 1, 8)];
+	unsigned length_count[CEIL(MAX_CODE_LENGTH + 1, 8)] /*= {0}*/;
+	unsigned length_start[CEIL(MAX_CODE_LENGTH + 1, 8)] /*= {0}*/;
+	unsigned length_pos[CEIL(MAX_CODE_LENGTH + 1, 8)] /*= {0}*/;
 
 	compress_zero_memory(length_count, sizeof(length_count));
 	compress_zero_memory(length_start, sizeof(length_start));
@@ -910,6 +988,7 @@ __inline static int compress_read_block(const unsigned char *in, unsigned len,
 	}
 
 	compress_calculate_codes(code_lengths, SYMBOL_COUNT);
+
 	compress_build_lookup_table(code_lengths, SYMBOL_COUNT, lookup_table,
 				    MAX_CODE_LENGTH);
 
@@ -1002,15 +1081,9 @@ __inline static int compress_read_block(const unsigned char *in, unsigned len,
 	return itt;
 }
 
-__attribute__((visibility("default"))) long compress_bound(
-    unsigned source_len) {
-	return (long)source_len + 3;
-}
+long compress_bound(unsigned source_len) { return (long)source_len + 3; }
 
-__attribute__((visibility("default"))) int compress_block(const void *in,
-							  unsigned len,
-							  void *out,
-							  unsigned capacity) {
+int compress_block(const void *in, unsigned len, void *out, unsigned capacity) {
 	unsigned short match_array[MAX_COMPRESS_LEN + 2];
 	unsigned frequencies[CEIL(SYMBOL_COUNT, 8)];
 	CodeLength code_lengths[CEIL(SYMBOL_COUNT, 8)];
@@ -1026,14 +1099,55 @@ __attribute__((visibility("default"))) int compress_block(const void *in,
 	compress_zero_memory(code_lengths, sizeof(code_lengths));
 	compress_zero_memory(book_frequencies, sizeof(book_frequencies));
 	compress_zero_memory(book, sizeof(book));
+	/*
 
+	{
+		long j;
+		for (j = 0; j < SYMBOL_COUNT; j++)
+			code_lengths[j].code = code_lengths[j].length =
+	0;
+	}
+	*/
 	out_bit_offset =
 	    compress_find_matches(in, len, match_array, frequencies, out);
 	compress_calculate_lengths(frequencies, code_lengths, SYMBOL_COUNT,
 				   MAX_CODE_LENGTH);
 	compress_calculate_codes(code_lengths, SYMBOL_COUNT);
 
+	/*
+	{
+		long i;
+		for (i = 0; i < SYMBOL_COUNT; i++) {
+			if (frequencies[i]) {
+				compress_write_str(2, "i=");
+				compress_write_num(2, i);
+				compress_write_str(2, ",len=");
+				compress_write_num(2,
+	code_lengths[i].length); compress_write_str(2, ",code=");
+				compress_write_num(2,
+	code_lengths[i].code); compress_write_str(2, "\n");
+			}
+		}
+	}
+	*/
 	compress_build_code_book(code_lengths, book, book_frequencies);
+
+	/*
+	{
+		long i;
+		for (i = 0; i < MAX_BOOK_CODES; i++) {
+			if (book[i].length) {
+				compress_write_str(2, "i=");
+				compress_write_num(2, i);
+				compress_write_str(2, ",len=");
+				compress_write_num(2, book[i].length);
+				compress_write_str(2, ",code=");
+				compress_write_num(2, book[i].code);
+				compress_write_str(2, "\n");
+			}
+		}
+	}
+	*/
 
 	if (compress_calculate_block_type(frequencies, book_frequencies,
 					  code_lengths, book, len))
@@ -1043,10 +1157,8 @@ __attribute__((visibility("default"))) int compress_block(const void *in,
 				      out_bit_offset);
 }
 
-__attribute__((visibility("default"))) int decompress_block(const void *in,
-							    unsigned len,
-							    void *out,
-							    unsigned capacity) {
+int decompress_block(const void *in, unsigned len, void *out,
+		     unsigned capacity) {
 	if (in == 0 || out == 0) return -EINVAL;
 	if (len < 3) return -EOVERFLOW;
 	if ((((const unsigned char *)in)[2] & 0x80) != 0)
