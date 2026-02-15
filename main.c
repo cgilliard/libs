@@ -117,10 +117,11 @@ static long lseek(long fd, long offset, long whence) {
 }
 
 int main(int argc, char **argv, char **envp) {
-	long r, size;
+	long r, size, i;
 	int fd;
 	char *in;
 	char out[MAX_COMPRESS_LEN + 3];
+	char verify[1024 * 1024];
 
 	if (argc < 2) {
 		write_str(2, "Usage command <pathname>\n");
@@ -139,6 +140,23 @@ int main(int argc, char **argv, char **envp) {
 	r = compress_block(in, size, out, sizeof(out));
 	write_num(2, r);
 	write_str(2, "\n");
+
+	r = decompress_block(out, r, verify, sizeof(verify));
+	write_num(2, r);
+	write_str(2, "\n");
+
+	if (r != size) {
+		write_str(2, "size mismatch!\n");
+		exit_group(-1);
+	}
+
+	for (i = 0; i < r; i++) {
+		if (verify[i] != in[i]) {
+			write_str(2, "ne!\n");
+			exit_group(-1);
+		}
+	}
+	write_str(2, "equal!\n");
 
 	exit_group(r);
 	return r;

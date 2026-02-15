@@ -253,6 +253,34 @@ __inline static long compress_write_syscall(int fd, const void *buf,
 	return ret;
 }
 
+/*
+ * __inline static void compress_zero_memory(void *ptr, long len_bytes) {
+#ifdef __AVX2__
+	char *p = (char *)ptr;
+	char *end = p + len_bytes;
+	__asm__ __volatile__(
+	    "vpxor  %%ymm0, %%ymm0, %%ymm0\n\t"
+	    "0:\n\t"
+	    "vmovdqu %%ymm0, (%0)\n\t"
+	    "add    $32, %0\n\t"
+	    "cmp    %0, %1\n\t"
+	    "jb     0b"
+	    : "+r"(p)
+	    : "r"(end)
+	    : "ymm0", "cc", "memory");
+#else
+	compress_memset(ptr, 0, len_bytes);
+#endif
+}    */
+
+/*
+void *memset(void *dest, int c, unsigned long n) {
+	unsigned char *tmp = dest;
+	while (n--) *tmp++ = (char)c;
+	return dest;
+}
+*/
+
 __inline static unsigned long compress_strlen(const char *x) {
 	const char *y = x;
 	while (*x) x++;
@@ -341,16 +369,35 @@ __inline static void *compress_memset(void *dest, int c, unsigned long n) {
 #endif /* __TINYC__ */
 
 __inline static void compress_zero_memory(void *ptr, long len_bytes) {
+/*
+#ifdef __AVX2__
+char *p = (char *)ptr;
+char *end = p + len_bytes;
+__asm__ __volatile__(
+    "vpxor  %%ymm0, %%ymm0, %%ymm0\n\t"
+    "0:\n\t"
+    "vmovdqu %%ymm0, (%0)\n\t"
+    "add    $32, %0\n\t"
+    "cmp    %0, %1\n\t"
+    "jb     0b"
+    : "+r"(p)
+    : "r"(end)
+    : "ymm0", "cc", "memory");
+#else
+*/
 #ifdef __AVX2__
 	char *p = (char *)ptr;
 	char *end = p + len_bytes;
+
 	__asm__ __volatile__(
 	    "vpxor  %%ymm0, %%ymm0, %%ymm0\n\t"
-	    "0:\n\t"
+	    "jmp    2f\n\t"
+	    "1:\n\t"
 	    "vmovdqu %%ymm0, (%0)\n\t"
 	    "add    $32, %0\n\t"
+	    "2:\n\t"
 	    "cmp    %0, %1\n\t"
-	    "jb     0b"
+	    "ja     1b"
 	    : "+r"(p)
 	    : "r"(end)
 	    : "ymm0", "cc", "memory");
@@ -635,9 +682,9 @@ __inline static void compress_calculate_lengths(const unsigned *frequencies,
 __inline static void compress_calculate_codes(CodeLength *code_lengths,
 					      unsigned short count) {
 	unsigned i, j, code = 0;
-	unsigned length_count[CEIL(MAX_CODE_LENGTH + 1, 8)];
-	unsigned length_start[CEIL(MAX_CODE_LENGTH + 1, 8)];
-	unsigned length_pos[CEIL(MAX_CODE_LENGTH + 1, 8)];
+	unsigned length_count[CEIL(MAX_CODE_LENGTH + 1, 8)] /*= {0}*/;
+	unsigned length_start[CEIL(MAX_CODE_LENGTH + 1, 8)] /*= {0}*/;
+	unsigned length_pos[CEIL(MAX_CODE_LENGTH + 1, 8)] /*= {0}*/;
 
 	compress_zero_memory(length_count, sizeof(length_count));
 	compress_zero_memory(length_start, sizeof(length_start));
@@ -849,8 +896,8 @@ __inline static int compress_write(
 	return (out_bit_offset + 7) / 8;
 }
 
-static int compress_read_raw(const unsigned char *in, unsigned len,
-			     unsigned char *out, unsigned capacity) {
+__inline static int compress_read_raw(const unsigned char *in, unsigned len,
+				      unsigned char *out, unsigned capacity) {
 	unsigned block_len;
 	unsigned char bytes[4];
 
@@ -873,10 +920,10 @@ static int compress_read_raw(const unsigned char *in, unsigned len,
 	return block_len;
 }
 
-static void compress_build_lookup_table(const CodeLength *code_lengths,
-					unsigned short count,
-					HuffmanLookup *lookup_table,
-					unsigned char max_length) {
+__inline static void compress_build_lookup_table(const CodeLength *code_lengths,
+						 unsigned short count,
+						 HuffmanLookup *lookup_table,
+						 unsigned char max_length) {
 	int i, j;
 	for (i = 0; i < count; i++) {
 		if (code_lengths[i].length) {
@@ -896,8 +943,8 @@ static void compress_build_lookup_table(const CodeLength *code_lengths,
 	}
 }
 
-static int compress_read_block(const unsigned char *in, unsigned len,
-			       unsigned char *out, unsigned capacity) {
+__inline static int compress_read_block(const unsigned char *in, unsigned len,
+					unsigned char *out, unsigned capacity) {
 	CodeLength code_lengths[CEIL(SYMBOL_COUNT, 8)];
 	unsigned i, j;
 	unsigned in_bit_offset;
@@ -978,6 +1025,39 @@ static int compress_read_block(const unsigned char *in, unsigned len,
 
 	compress_build_lookup_table(code_lengths, SYMBOL_COUNT, lookup_table,
 				    MAX_CODE_LENGTH);
+
+	/*
+	{
+		for (i = 0; i < SYMBOL_COUNT; i++) {
+			if (code_lengths[i].length) {
+				compress_write_str(2, "i=");
+				compress_write_num(2, i);
+				compress_write_str(2, ",len=");
+				compress_write_num(2, code_lengths[i].length);
+				compress_write_str(2, ",code=");
+				compress_write_num(2, code_lengths[i].code);
+				compress_write_str(2, "\n");
+			}
+		}
+	}
+	*/
+	/*
+	{
+		for (i = 0; i < MAX_BOOK_CODES; i++) {
+			if (book_code_lengths[i].length) {
+				compress_write_str(2, "i=");
+				compress_write_num(2, i);
+				compress_write_str(2, ",len=");
+				compress_write_num(2,
+						   book_code_lengths[i].length);
+				compress_write_str(2, ",code=");
+				compress_write_num(2,
+						   book_code_lengths[i].code);
+				compress_write_str(2, "\n");
+			}
+		}
+	}
+	*/
 
 	while (1) {
 		unsigned short bits;
@@ -1082,7 +1162,14 @@ int compress_block(const void *in, unsigned len, void *out, unsigned capacity) {
 	compress_zero_memory(code_lengths, sizeof(code_lengths));
 	compress_zero_memory(book_frequencies, sizeof(book_frequencies));
 	compress_zero_memory(book, sizeof(book));
+	/*
 
+	{
+		long j;
+		for (j = 0; j < SYMBOL_COUNT; j++)
+			code_lengths[j].code = code_lengths[j].length = 0;
+	}
+	*/
 	out_bit_offset =
 	    compress_find_matches(in, len, match_array, frequencies, out);
 	compress_calculate_lengths(frequencies, code_lengths, SYMBOL_COUNT,
@@ -1094,10 +1181,8 @@ int compress_block(const void *in, unsigned len, void *out, unsigned capacity) {
 		long i;
 		for (i = 0; i < SYMBOL_COUNT; i++) {
 			if (frequencies[i]) {
-				compress_write_str(2, "frequency[");
+				compress_write_str(2, "i=");
 				compress_write_num(2, i);
-				compress_write_str(2, "]=");
-				compress_write_num(2, frequencies[i]);
 				compress_write_str(2, ",len=");
 				compress_write_num(2, code_lengths[i].length);
 				compress_write_str(2, ",code=");
@@ -1108,6 +1193,23 @@ int compress_block(const void *in, unsigned len, void *out, unsigned capacity) {
 	}
 	*/
 	compress_build_code_book(code_lengths, book, book_frequencies);
+
+	/*
+	{
+		long i;
+		for (i = 0; i < MAX_BOOK_CODES; i++) {
+			if (book[i].length) {
+				compress_write_str(2, "i=");
+				compress_write_num(2, i);
+				compress_write_str(2, ",len=");
+				compress_write_num(2, book[i].length);
+				compress_write_str(2, ",code=");
+				compress_write_num(2, book[i].code);
+				compress_write_str(2, "\n");
+			}
+		}
+	}
+	*/
 
 	if (compress_calculate_block_type(frequencies, book_frequencies,
 					  code_lengths, book, len))
