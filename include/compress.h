@@ -285,22 +285,6 @@ __inline static void *compress_memset(void *dest, int c, unsigned long n) {
 #endif /* __TINYC__ */
 
 __inline static void compress_zero_memory(void *ptr, long len_bytes) {
-/*
-#ifdef __AVX2__
-char *p = (char *)ptr;
-char *end = p + len_bytes;
-__asm__ __volatile__(
-    "vpxor  %%ymm0, %%ymm0, %%ymm0\n\t"
-    "0:\n\t"
-    "vmovdqu %%ymm0, (%0)\n\t"
-    "add    $32, %0\n\t"
-    "cmp    %0, %1\n\t"
-    "jb     0b"
-    : "+r"(p)
-    : "r"(end)
-    : "ymm0", "cc", "memory");
-#else
-*/
 #ifdef __AVX2__
 	char *p = (char *)ptr;
 	char *end = p + len_bytes;
