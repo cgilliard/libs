@@ -12,6 +12,9 @@ int decompress_block(const void *in, unsigned len, void *out,
 #ifndef COMPRESS_IMPL_GUARD
 #define COMPRESS_IMPL_GUARD
 
+long write(long fd, const void *buf, long len);
+static long write_num(int fd, long num);
+
 #ifndef EFAULT
 #define EFAULT 14
 #endif
@@ -276,7 +279,19 @@ __inline static int compress_clz32(unsigned int x) {
 
 	return n;
 }
-__inline static void *compress_memset(void *dest, int c, unsigned long n) {
+
+#if defined(__GNUC__) && !defined(__clang__)
+#define NO_LOOP_PATTERN_ATTR \
+	__attribute__((optimize("no-tree-loop-distribute-patterns")))
+#elif defined(__clang__)
+#define NO_LOOP_PATTERN_ATTR \
+	__attribute__((optnone))  // or just volatile as fallback
+#else
+#define NO_LOOP_PATTERN_ATTR
+#endif
+NO_LOOP_PATTERN_ATTR
+static void *compress_memset(void *dest, int c,
+			     unsigned long n) {
 	char *tmp = dest;
 	while (n--) *tmp++ = (char)c;
 	return dest;

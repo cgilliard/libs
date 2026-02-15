@@ -1,6 +1,8 @@
 #define COMPRESS_IMPL
 #include "include/compress.h"
 
+int main(int argc, char **argv, char **envp);
+
 #ifdef __x86_64__
 __asm__(
     ".section .text\n"
@@ -61,8 +63,7 @@ __asm__(
     "    mov x4, sp\n"
     "    bic x4, x4, #15\n"
     "    mov sp, x4\n"
-    "    bl main\n"
-    "    bl exit_group\n");
+    "    bl main\n");
 #endif
 
 void syscall(void *ret, long sysno, long a0, long a1, long a2, long a3, long a4,

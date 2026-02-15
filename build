@@ -1,15 +1,16 @@
 #!/bin/sh
 
-CC=clang
+CC=tcc
 BIN_DIR=target/bin
 
 mkdir -p ${BIN_DIR};
 
-COMMAND="${CC} -O3 -flto=auto \
-	-mavx2 \
+COMMAND="${CC} -O3 \
+	-march=armv8-a \
 	-fno-stack-clash-protection \
+	-fno-builtin-memset \
 	-nostdlib \
-	-std=c89 \
+	-std=c11 \
 	-pedantic \
 	-Werror \
 	-Wall \
