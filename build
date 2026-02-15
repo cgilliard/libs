@@ -1,11 +1,11 @@
 #!/bin/sh
 
-CC=gcc
+CC=clang
 BIN_DIR=target/bin
 
 mkdir -p ${BIN_DIR};
 
-COMMAND="${CC} \
+COMMAND="${CC} -O3 -flto=auto \
 	-mavx2 \
 	-fno-stack-clash-protection \
 	-nostdlib \

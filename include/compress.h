@@ -251,9 +251,31 @@ __inline static void *compress_memcpy_movsb(void *dest, const void *src,
 
 #ifdef __TINYC__
 __inline static int compress_clz32(unsigned int x) {
-	int r;
-	__asm__("bsrl %1, %0" : "=r"(r) : "r"(x) : "cc");
-	return 31 - r;
+	if (x == 0) return 32;
+
+	int n = 0;
+
+	if ((x & 0xFFFF0000U) == 0) {
+		n += 16;
+		x <<= 16;
+	}
+	if ((x & 0xFF000000U) == 0) {
+		n += 8;
+		x <<= 8;
+	}
+	if ((x & 0xF0000000U) == 0) {
+		n += 4;
+		x <<= 4;
+	}
+	if ((x & 0xC0000000U) == 0) {
+		n += 2;
+		x <<= 2;
+	}
+	if ((x & 0x80000000U) == 0) {
+		n += 1;
+	}
+
+	return n;
 }
 __inline static void *compress_memset(void *dest, int c, unsigned long n) {
 	char *tmp = dest;
