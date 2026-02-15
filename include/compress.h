@@ -938,7 +938,6 @@ __inline static int compress_read_block(const unsigned char *in, unsigned len,
 
 	in_bit_offset += 32;
 	for (i = 0; i < MAX_BOOK_CODES; i++) {
-		/*book_code_lengths[i].length =*/
 		TRY_READ(&book_code_lengths[i].length, buffer, bits_in_buffer,
 			 in_bit_offset, in, len, 3);
 	}
@@ -996,39 +995,6 @@ __inline static int compress_read_block(const unsigned char *in, unsigned len,
 
 	compress_build_lookup_table(code_lengths, SYMBOL_COUNT, lookup_table,
 				    MAX_CODE_LENGTH);
-
-	/*
-	{
-		for (i = 0; i < SYMBOL_COUNT; i++) {
-			if (code_lengths[i].length) {
-				compress_write_str(2, "i=");
-				compress_write_num(2, i);
-				compress_write_str(2, ",len=");
-				compress_write_num(2, code_lengths[i].length);
-				compress_write_str(2, ",code=");
-				compress_write_num(2, code_lengths[i].code);
-				compress_write_str(2, "\n");
-			}
-		}
-	}
-	*/
-	/*
-	{
-		for (i = 0; i < MAX_BOOK_CODES; i++) {
-			if (book_code_lengths[i].length) {
-				compress_write_str(2, "i=");
-				compress_write_num(2, i);
-				compress_write_str(2, ",len=");
-				compress_write_num(2,
-						   book_code_lengths[i].length);
-				compress_write_str(2, ",code=");
-				compress_write_num(2,
-						   book_code_lengths[i].code);
-				compress_write_str(2, "\n");
-			}
-		}
-	}
-	*/
 
 	while (1) {
 		unsigned short bits;
@@ -1138,7 +1104,8 @@ int compress_block(const void *in, unsigned len, void *out, unsigned capacity) {
 	{
 		long j;
 		for (j = 0; j < SYMBOL_COUNT; j++)
-			code_lengths[j].code = code_lengths[j].length = 0;
+			code_lengths[j].code = code_lengths[j].length =
+	0;
 	}
 	*/
 	out_bit_offset =
@@ -1155,10 +1122,10 @@ int compress_block(const void *in, unsigned len, void *out, unsigned capacity) {
 				compress_write_str(2, "i=");
 				compress_write_num(2, i);
 				compress_write_str(2, ",len=");
-				compress_write_num(2, code_lengths[i].length);
-				compress_write_str(2, ",code=");
-				compress_write_num(2, code_lengths[i].code);
-				compress_write_str(2, "\n");
+				compress_write_num(2,
+	code_lengths[i].length); compress_write_str(2, ",code=");
+				compress_write_num(2,
+	code_lengths[i].code); compress_write_str(2, "\n");
 			}
 		}
 	}

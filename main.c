@@ -52,6 +52,14 @@ void mmap(void **ret, void *addr, long length, long prot, long flags, long fd,
 	syscall(ret, 9, (long)addr, length, prot, flags, fd, offset);
 }
 
+void *memmove(void *dest, const void *src, unsigned long n);
+void *memmove(void *dest, const void *src, unsigned long n) {
+	unsigned char *d = (void *)((unsigned char *)dest + n);
+	const unsigned char *s = (const void *)((const unsigned char *)src + n);
+	while (n--) d--, s--, *d = *s;
+	return dest;
+}
+
 static long write_str(long fd, char *msg) {
 	long len = compress_strlen(msg);
 	return write(fd, msg, len);
