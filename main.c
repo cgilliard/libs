@@ -1,6 +1,7 @@
 #define COMPRESS_IMPL
 #include "include/compress.h"
 
+#ifdef __x86_64__
 __asm__(
     ".section .text\n"
     "syscall:\n"
@@ -31,6 +32,38 @@ __asm__(
     "    mov %rsp, %rcx\n"
     "    and $-16, %rsp\n"
     "    call main\n");
+#else
+__asm__(
+    ".section .text\n"
+    "syscall:\n"
+    "stp     x29, x30, [sp, #-16]!\n"
+    "mov     x29, x0\n"
+    "mov     x8, x1\n"
+    "mov     x0, x2\n"
+    "mov     x1, x3\n"
+    "mov     x2, x4\n"
+    "mov     x3, x5\n"
+    "mov     x4, x6\n"
+    "mov     x5, x7\n"
+    "svc     #0\n"
+    "str     x0, [x29]\n"
+    "ldp     x29, x30, [sp], #16\n"
+    "ret\n");
+__asm__(
+    ".section .text\n"
+    ".global _start\n"
+    "_start:\n"
+    "    ldr x0, [sp]\n"
+    "    add x1, sp, #8\n"
+    "    add x3, x0, #1\n"
+    "    lsl x3, x3, #3\n"
+    "    add x2, x1, x3\n"
+    "    mov x4, sp\n"
+    "    bic x4, x4, #15\n"
+    "    mov sp, x4\n"
+    "    bl main\n"
+    "    bl exit_group\n");
+#endif
 
 void syscall(void *ret, long sysno, long a0, long a1, long a2, long a3, long a4,
 	     long a5);
@@ -39,17 +72,31 @@ long write(long fd, const void *buf, long len);
 void mmap(void **ret, void *adr, long length, long prot, long flags, long fd,
 	  long offset);
 
-void exit_group(long status) { syscall(&status, 231, status, 0, 0, 0, 0, 0); }
+void exit_group(long status) {
+#ifdef __aarch64__
+	syscall(&status, 94, status, 0, 0, 0, 0, 0);
+#else
+	syscall(&status, 231, status, 0, 0, 0, 0, 0);
+#endif
+}
 
 long write(long fd, const void *buf, long len) {
 	long ret;
+#ifdef __aarch64__
+	syscall(&ret, 64, fd, (long)buf, len, 0, 0, 0);
+#else
 	syscall(&ret, 1, fd, (long)buf, len, 0, 0, 0);
+#endif
 	return ret;
 }
 
 void mmap(void **ret, void *addr, long length, long prot, long flags, long fd,
 	  long offset) {
+#ifdef __aarch64__
+	syscall(ret, 222, (long)addr, length, prot, flags, fd, offset);
+#else
 	syscall(ret, 9, (long)addr, length, prot, flags, fd, offset);
+#endif
 }
 
 void *memmove(void *dest, const void *src, unsigned long n);
@@ -57,6 +104,13 @@ void *memmove(void *dest, const void *src, unsigned long n) {
 	unsigned char *d = (void *)((unsigned char *)dest + n);
 	const unsigned char *s = (const void *)((const unsigned char *)src + n);
 	while (n--) d--, s--, *d = *s;
+	return dest;
+}
+
+void *memset(void *est, int c, unsigned long n);
+void *memset(void *dest, int c, unsigned long n) {
+	unsigned char *tmp = dest;
+	while (n--) *tmp++ = (char)c;
 	return dest;
 }
 
@@ -121,13 +175,22 @@ static void *fmap_ro(long fd, long size, long offset) {
 
 static int open(const char *pathname, int flags, int mode) {
 	long ret;
+#ifdef __aarch64__
+	syscall(&ret, 56, -100, (long)pathname, flags, mode, 0, 0);
+#else
 	syscall(&ret, 2, (long)pathname, flags, mode, 0, 0, 0);
+#endif
 	return ret;
 }
 
 static long lseek(long fd, long offset, long whence) {
 	long ret;
+#ifdef __aarch64__
+	syscall(&ret, 62, fd, offset, whence, 0, 0, 0);
+#else
 	syscall(&ret, 8, fd, offset, whence, 0, 0, 0);
+#endif
+
 	return ret;
 }
 

@@ -249,11 +249,10 @@ __inline static void *compress_memcpy_movsb(void *dest, const void *src,
 	return dest;
 }
 
-#ifdef __TINYC__
+#ifndef __AVX2__
 __inline static int compress_clz32(unsigned int x) {
-	if (x == 0) return 32;
-
 	int n = 0;
+	if (x == 0) return 32;
 
 	if ((x & 0xFFFF0000U) == 0) {
 		n += 16;
