@@ -9,7 +9,7 @@ COMMAND="${CC}   -O3 \
 	-mavx2 \
 	-fno-stack-clash-protection \
 	-nostdlib \
-	-std=c11 \
+	-std=c89 \
 	-pedantic \
 	-Werror \
 	-Wall \
@@ -19,6 +19,7 @@ COMMAND="${CC}   -O3 \
 	-Wcast-qual \
 	-Wmissing-prototypes \
 	-Wmissing-declarations \
+	-Wno-gnu-statement-expression-from-macro-expansion \
 	-o ${BIN_DIR}/test \
 	main.c"
 

@@ -52,6 +52,51 @@ void mmap(void **ret, void *addr, long length, long prot, long flags, long fd,
 	syscall(ret, 9, (long)addr, length, prot, flags, fd, offset);
 }
 
+static long write_str(long fd, char *msg) {
+	long len = compress_strlen(msg);
+	return write(fd, msg, len);
+}
+
+static long write_num(int fd, long num) {
+	unsigned char buf[21];
+	unsigned char *p;
+	unsigned long len;
+	long written;
+	int negative = 0;
+
+	if (fd < 0) return -1;
+	p = buf + sizeof(buf) - 1;
+	*p = '\0';
+
+	if (num < 0) {
+		negative = 1;
+		if (num == ((long)(-0x7FFFFFFFFFFFFFFF - 1))) {
+			const char min_str[] = "-9223372036854775808";
+			len = sizeof(min_str) - 1;
+			written = write(fd, min_str, len);
+			if (written < 0) return -1;
+			if ((unsigned long)written != len) return -1;
+			return 0;
+		}
+		num = -num;
+	}
+
+	if (num == 0)
+		*--p = '0';
+	else
+		while (num > 0) {
+			*--p = '0' + (num % 10);
+			num /= 10;
+		}
+
+	if (negative) *--p = '-';
+	len = (buf + sizeof(buf) - 1) - p;
+	written = compress_write_syscall(fd, p, len);
+	if (written < 0) return -1;
+	if ((unsigned long)written != len) return -1;
+	return 0;
+}
+
 static void *fmap_ro(long fd, long size, long offset) {
 	void *ret = 0;
 	mmap(&ret, 0, size, 1, 1, fd, offset);
@@ -92,6 +137,8 @@ int main(int argc, char **argv, char **envp) {
 	in = fmap_ro(fd, size, 0);
 
 	r = compress_block(in, size, out, sizeof(out));
+	write_num(2, r);
+	write_str(2, "\n");
 
 	exit_group(r);
 	return r;
@@ -100,4 +147,5 @@ int main(int argc, char **argv, char **envp) {
 	(void)argc;
 	(void)compress_bound;
 	(void)decompress_block;
+	(void)write_num;
 }
