@@ -214,39 +214,6 @@ static const unsigned long bitstream_masks[65] = {
     0x0FFFFFFFFFFFFFFFUL, 0x1FFFFFFFFFFFFFFFUL, 0x3FFFFFFFFFFFFFFFUL,
     0x7FFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL};
 
-#ifdef __x86_64__
-__asm__(
-    ".section .text\n"
-    "compress_syscall:\n"
-    "push    %rbp\n"
-    "mov     %rdi, %rbp\n"
-    "mov     %rsi, %rax\n"
-    "mov     %rdx, %rdi\n"
-    "mov     %rcx, %rsi\n"
-    "mov     %r8,  %rdx\n"
-    "mov     %r9,  %r10\n"
-    "mov     16(%rsp), %r8\n"
-    "mov     24(%rsp), %r9\n"
-    "syscall\n"
-    "mov     %rax, 0(%rbp)\n"
-    "pop     %rbp\n"
-    "ret\n");
-
-void compress_syscall(void *ret, long sysno, long a0, long a1, long a2, long a3,
-		      long a4, long a5);
-#endif /* __x86_64__ */
-
-__inline static long compress_write_syscall(int fd, const void *buf,
-					    unsigned long len) {
-	long ret;
-#ifdef __x86_64__
-	compress_syscall(&ret, 1, fd, (long)buf, len, 0, 0, 0);
-#else
-	ret = 0;
-#endif /* !__x86_64__ */
-	return ret;
-}
-
 __inline static unsigned long compress_strlen(const char *x) {
 	const char *y = x;
 	while (*x) x++;
@@ -272,53 +239,6 @@ __inline static void *compress_memcpy_movsb(void *dest, const void *src,
 	compress_memcpy(dest, src, n);
 #endif
 	return dest;
-}
-
-__inline __attribute__((unused)) static long compress_write_str(long fd,
-								char *msg) {
-	long len = compress_strlen(msg);
-	return compress_write_syscall(fd, msg, len);
-}
-
-__inline __attribute__((unused)) static long compress_write_num(int fd,
-								long num) {
-	unsigned char buf[21];
-	unsigned char *p;
-	unsigned long len;
-	long written;
-	int negative = 0;
-
-	if (fd < 0) return -1;
-	p = buf + sizeof(buf) - 1;
-	*p = '\0';
-
-	if (num < 0) {
-		negative = 1;
-		if (num == ((long)(-0x7FFFFFFFFFFFFFFF - 1))) {
-			const char min_str[] = "-9223372036854775808";
-			len = sizeof(min_str) - 1;
-			written = compress_write_syscall(fd, min_str, len);
-			if (written < 0) return -1;
-			if ((unsigned long)written != len) return -1;
-			return 0;
-		}
-		num = -num;
-	}
-
-	if (num == 0)
-		*--p = '0';
-	else
-		while (num > 0) {
-			*--p = '0' + (num % 10);
-			num /= 10;
-		}
-
-	if (negative) *--p = '-';
-	len = (buf + sizeof(buf) - 1) - p;
-	written = compress_write_syscall(fd, p, len);
-	if (written < 0) return -1;
-	if ((unsigned long)written != len) return -1;
-	return 0;
 }
 
 #ifdef __TINYC__
@@ -1099,55 +1019,14 @@ int compress_block(const void *in, unsigned len, void *out, unsigned capacity) {
 	compress_zero_memory(code_lengths, sizeof(code_lengths));
 	compress_zero_memory(book_frequencies, sizeof(book_frequencies));
 	compress_zero_memory(book, sizeof(book));
-	/*
 
-	{
-		long j;
-		for (j = 0; j < SYMBOL_COUNT; j++)
-			code_lengths[j].code = code_lengths[j].length =
-	0;
-	}
-	*/
 	out_bit_offset =
 	    compress_find_matches(in, len, match_array, frequencies, out);
 	compress_calculate_lengths(frequencies, code_lengths, SYMBOL_COUNT,
 				   MAX_CODE_LENGTH);
 	compress_calculate_codes(code_lengths, SYMBOL_COUNT);
 
-	/*
-	{
-		long i;
-		for (i = 0; i < SYMBOL_COUNT; i++) {
-			if (frequencies[i]) {
-				compress_write_str(2, "i=");
-				compress_write_num(2, i);
-				compress_write_str(2, ",len=");
-				compress_write_num(2,
-	code_lengths[i].length); compress_write_str(2, ",code=");
-				compress_write_num(2,
-	code_lengths[i].code); compress_write_str(2, "\n");
-			}
-		}
-	}
-	*/
 	compress_build_code_book(code_lengths, book, book_frequencies);
-
-	/*
-	{
-		long i;
-		for (i = 0; i < MAX_BOOK_CODES; i++) {
-			if (book[i].length) {
-				compress_write_str(2, "i=");
-				compress_write_num(2, i);
-				compress_write_str(2, ",len=");
-				compress_write_num(2, book[i].length);
-				compress_write_str(2, ",code=");
-				compress_write_num(2, book[i].code);
-				compress_write_str(2, "\n");
-			}
-		}
-	}
-	*/
 
 	if (compress_calculate_block_type(frequencies, book_frequencies,
 					  code_lengths, book, len))
