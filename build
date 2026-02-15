@@ -22,7 +22,7 @@ COMMAND="${CC} -O3 \
 	-o ${BIN_DIR}/test \
 	main.c"
 
-#COMMAND="${CC} -shared -fPIC -O3 -mavx2 -DCOMPRESS_IMPL -x c include/compress.h -o libcompress.so"
+#COMMAND="${CC} -fvisibility=hidden -nostdlib -shared -fPIC -O3 -mavx2 -DCOMPRESS_IMPL -x c include/compress.h -o libcompress.so"
 
 echo ${COMMAND};
 ${COMMAND};
