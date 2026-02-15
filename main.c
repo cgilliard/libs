@@ -60,8 +60,15 @@ void *memmove(void *dest, const void *src, unsigned long n) {
 	return dest;
 }
 
+unsigned long strlen(const char *x);
+unsigned long strlen(const char *x) {
+	const char *y = x;
+	while (*x) x++;
+	return x - y;
+}
+
 static long write_str(long fd, char *msg) {
-	long len = compress_strlen(msg);
+	long len = strlen(msg);
 	return write(fd, msg, len);
 }
 
@@ -99,7 +106,7 @@ static long write_num(int fd, long num) {
 
 	if (negative) *--p = '-';
 	len = (buf + sizeof(buf) - 1) - p;
-	written = compress_write_syscall(fd, p, len);
+	written = write(fd, p, len);
 	if (written < 0) return -1;
 	if ((unsigned long)written != len) return -1;
 	return 0;
@@ -169,9 +176,4 @@ int main(int argc, char **argv, char **envp) {
 	exit_group(r);
 	return r;
 	(void)envp;
-	(void)argv;
-	(void)argc;
-	(void)compress_bound;
-	(void)decompress_block;
-	(void)write_num;
 }
