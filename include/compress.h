@@ -3,10 +3,6 @@
 
 #define MAX_COMPRESS_LEN (1 << 18)
 
-#ifdef __AVX2__
-#include <immintrin.h>
-#endif /* __AVX2__ */
-
 long compress_bound(unsigned source_len);
 int compress_block(const void *in, unsigned len, void *out, unsigned capacity);
 int decompress_block(const void *in, unsigned len, void *out,
@@ -1042,23 +1038,27 @@ __inline static int compress_read_block(const unsigned char *in, unsigned len,
 			if (__builtin_expect(out_src + 32 <= out_dst, 1)) {
 				unsigned long chunks = (mlen + 31) >> 5;
 				while (chunks--) {
-					__m256i vec = _mm256_loadu_si256(
-					    (__m256i *)out_src);
-					_mm256_storeu_si256((__m256i *)out_dst,
-							    vec);
-					out_src += 32;
-					out_dst += 32;
+					__asm__ __volatile__(
+					    "vmovdqu  (%0),     %%ymm0\n\t"
+					    "vmovdqu  %%ymm0,   (%1)\n\t"
+					    "add      $32,      %0\n\t"
+					    "add      $32,      %1\n\t"
+					    : "+r"(out_src), "+r"(out_dst)
+					    :
+					    : "ymm0", "memory", "cc");
 				}
 			} else if (__builtin_expect(out_src + 16 <= out_dst,
 						    1)) {
 				unsigned long chunks = (mlen + 15) >> 4;
 				while (chunks--) {
-					__m128i vec =
-					    _mm_loadu_si128((__m128i *)out_src);
-					_mm_storeu_si128((__m128i *)out_dst,
-							 vec);
-					out_src += 16;
-					out_dst += 16;
+					__asm__ __volatile__(
+					    "movdqu   (%0),     %%xmm0\n\t"
+					    "movdqu   %%xmm0,   (%1)\n\t"
+					    "add      $16,      %0\n\t"
+					    "add      $16,      %1\n\t"
+					    : "+r"(out_src), "+r"(out_dst)
+					    :
+					    : "xmm0", "memory", "cc");
 				}
 			} else if (__builtin_expect(out_src + 8 <= out_dst,
 						    1)) {
