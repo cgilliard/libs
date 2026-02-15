@@ -36,6 +36,8 @@ void syscall(void *ret, long sysno, long a0, long a1, long a2, long a3, long a4,
 	     long a5);
 void exit_group(long status);
 long write(long fd, const void *buf, long len);
+void mmap(void **ret, void *adr, long length, long prot, long flags, long fd,
+	  long offset);
 
 void exit_group(long status) { syscall(&status, 231, status, 0, 0, 0, 0, 0); }
 
@@ -45,12 +47,51 @@ long write(long fd, const void *buf, long len) {
 	return ret;
 }
 
-int main(int argc, char **argv, char **envp) {
-	long r;
-	char out[1024];
+void mmap(void **ret, void *addr, long length, long prot, long flags, long fd,
+	  long offset) {
+	syscall(ret, 9, (long)addr, length, prot, flags, fd, offset);
+}
 
-	write(2, "hi\n", 3);
-	r = compress_block("ok", 2, out, 1024);
+static void *fmap_ro(long fd, long size, long offset) {
+	void *ret = 0;
+	mmap(&ret, 0, size, 1, 1, fd, offset);
+	if ((long)ret < 0) ret = 0;
+	return ret;
+}
+
+static int open(const char *pathname, int flags, int mode) {
+	long ret;
+	syscall(&ret, 2, (long)pathname, flags, mode, 0, 0, 0);
+	return ret;
+}
+
+static long lseek(long fd, long offset, long whence) {
+	long ret;
+	syscall(&ret, 8, fd, offset, whence, 0, 0, 0);
+	return ret;
+}
+
+int main(int argc, char **argv, char **envp) {
+	long r, size;
+	int fd;
+	char *in;
+	char out[MAX_COMPRESS_LEN + 3];
+
+	if (argc < 2) {
+		write_str(2, "Usage command <pathname>\n");
+		exit_group(-1);
+	}
+
+	fd = open(argv[1], 0, 0);
+	if (fd < 0) {
+		write_str(2, "could not open file\n");
+		exit_group(-1);
+	}
+
+	size = lseek(fd, 0, 2);
+	in = fmap_ro(fd, size, 0);
+
+	r = compress_block(in, size, out, sizeof(out));
 
 	exit_group(r);
 	return r;
