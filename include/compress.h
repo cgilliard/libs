@@ -12,10 +12,18 @@ int decompress_block(const void *in, unsigned len, void *out,
 #ifndef COMPRESS_IMPL_GUARD
 #define COMPRESS_IMPL_GUARD
 
+#ifndef EFAULT
 #define EFAULT 14
+#endif
+#ifndef EINVAL
 #define EINVAL 22
+#endif
+#ifndef EPROTO
 #define EPROTO 71
+#endif
+#ifndef EOVERFLOW
 #define EOVERFLOW 75
+#endif
 
 #define MAX_MATCH_LEN 256
 #define MIN_MATCH_LEN 4
