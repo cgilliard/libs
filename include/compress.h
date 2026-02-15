@@ -144,19 +144,17 @@ int decompress_block(const void *in, unsigned len, void *out,
 		bits_in_buffer += bits_to_load;                                \
 	}
 
-#define TRY_READ(buffer, bits_in_buffer, in_bit_offset, data, capacity,       \
+#define TRY_READ(res, buffer, bits_in_buffer, in_bit_offset, data, capacity,  \
 		 num_bits)                                                    \
-	({                                                                    \
-		unsigned long _res__;                                         \
+	do {                                                                  \
 		if ((bits_in_buffer) < (num_bits)) {                          \
 			TRY_LOAD(buffer, bits_in_buffer, in_bit_offset, data, \
 				 capacity);                                   \
 		}                                                             \
-		_res__ = buffer & (bitstream_masks[num_bits]);                \
+		*(res) = buffer & (bitstream_masks[num_bits]);                \
 		buffer = buffer >> num_bits;                                  \
 		bits_in_buffer -= num_bits;                                   \
-		_res__;                                                       \
-	})
+	} while (0);
 
 #define PEEK_READER(buffer, num_bits) (buffer & (bitstream_masks[num_bits]))
 #define ADVANCE_READER(buffer, bits_in_buffer, num_bits) \
@@ -252,34 +250,6 @@ __inline static long compress_write_syscall(int fd, const void *buf,
 #endif /* !__x86_64__ */
 	return ret;
 }
-
-/*
- * __inline static void compress_zero_memory(void *ptr, long len_bytes) {
-#ifdef __AVX2__
-	char *p = (char *)ptr;
-	char *end = p + len_bytes;
-	__asm__ __volatile__(
-	    "vpxor  %%ymm0, %%ymm0, %%ymm0\n\t"
-	    "0:\n\t"
-	    "vmovdqu %%ymm0, (%0)\n\t"
-	    "add    $32, %0\n\t"
-	    "cmp    %0, %1\n\t"
-	    "jb     0b"
-	    : "+r"(p)
-	    : "r"(end)
-	    : "ymm0", "cc", "memory");
-#else
-	compress_memset(ptr, 0, len_bytes);
-#endif
-}    */
-
-/*
-void *memset(void *dest, int c, unsigned long n) {
-	unsigned char *tmp = dest;
-	while (n--) *tmp++ = (char)c;
-	return dest;
-}
-*/
 
 __inline static unsigned long compress_strlen(const char *x) {
 	const char *y = x;
@@ -968,8 +938,9 @@ __inline static int compress_read_block(const unsigned char *in, unsigned len,
 
 	in_bit_offset += 32;
 	for (i = 0; i < MAX_BOOK_CODES; i++) {
-		book_code_lengths[i].length =
-		    TRY_READ(buffer, bits_in_buffer, in_bit_offset, in, len, 3);
+		/*book_code_lengths[i].length =*/
+		TRY_READ(&book_code_lengths[i].length, buffer, bits_in_buffer,
+			 in_bit_offset, in, len, 3);
 	}
 
 	compress_calculate_codes(book_code_lengths, MAX_BOOK_CODES);
@@ -995,26 +966,26 @@ __inline static int compress_read_block(const unsigned char *in, unsigned len,
 		} else if (code == REPEAT_VALUE_INDEX) {
 			unsigned char repeat;
 			if (i == 0 || last_length == 0) return -EPROTO;
-			repeat = TRY_READ(buffer, bits_in_buffer, in_bit_offset,
-					  in, len, 2) +
-				 3;
+			TRY_READ(&repeat, buffer, bits_in_buffer, in_bit_offset,
+				 in, len, 2);
+			repeat += 3;
 			if (i + repeat > SYMBOL_COUNT) return -EPROTO;
 			for (j = 0; j < repeat; j++) {
 				code_lengths[i++].length = last_length;
 			}
 		} else if (code == REPEAT_ZERO_LONG_INDEX) {
-			unsigned char zeros =
-			    TRY_READ(buffer, bits_in_buffer, in_bit_offset, in,
-				     len, 7) +
-			    11;
+			unsigned char zeros;
+			TRY_READ(&zeros, buffer, bits_in_buffer, in_bit_offset,
+				 in, len, 7);
+			zeros += 11;
 			if (i + zeros > SYMBOL_COUNT) return -EPROTO;
 			for (j = 0; j < zeros; j++)
 				code_lengths[i++].length = 0;
 		} else if (code == REPEAT_ZERO_SHORT_INDEX) {
-			unsigned char zeros =
-			    TRY_READ(buffer, bits_in_buffer, in_bit_offset, in,
-				     len, 3) +
-			    3;
+			unsigned char zeros;
+			TRY_READ(&zeros, buffer, bits_in_buffer, in_bit_offset,
+				 in, len, 3);
+			zeros += 3;
 			if (i + zeros > SYMBOL_COUNT) return -EPROTO;
 			for (j = 0; j < zeros; j++)
 				code_lengths[i++].length = 0;
