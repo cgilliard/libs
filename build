@@ -1,0 +1,25 @@
+#!/bin/sh
+
+CC=gcc
+BIN_DIR=target/bin
+
+mkdir -p ${BIN_DIR};
+
+COMMAND="${CC}   -O3 \
+	-mavx2 \
+	-nostdlib \
+	-std=c89 \
+	-pedantic \
+	-Werror \
+	-Wall \
+	-Wextra \
+	-Wshadow \
+	-Wpointer-arith \
+	-Wcast-qual \
+	-Wmissing-prototypes \
+	-Wmissing-declarations \
+	-o ${BIN_DIR}/test \
+	main.c"
+
+echo ${COMMAND};
+${COMMAND};

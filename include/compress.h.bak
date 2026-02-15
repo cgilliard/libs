@@ -1,0 +1,197 @@
+#ifndef _COMPRESS_H__
+#define _COMPRESS_H__
+
+#define MAX_COMPRESS_LEN (1 << 18)
+
+static long compress_bound(long source_len);
+static int compress_block(const void *in, unsigned len, void *out,
+			  unsigned capacity);
+static int decompress_block(const void *in, unsigned len, void *out,
+			    unsigned capacity);
+
+#ifdef COMPRESS_IMPL
+#ifndef COMPRESS_IMPL_GUARD
+#define COMPRESS_IMPL_GUARD
+
+#define STATIC_ASSERT(condition, message) \
+	typedef unsigned char static_assert_##message[(condition) ? 1 : -1]
+
+STATIC_ASSERT(sizeof(char) == 1, char_sizes_match);
+STATIC_ASSERT(sizeof(unsigned char) == 1, unsigned_char_sizes_match);
+STATIC_ASSERT(sizeof(short) == 2, short_sizes_match);
+STATIC_ASSERT(sizeof(unsigned short) == 2, unsigned_short_sizes_match);
+STATIC_ASSERT(sizeof(unsigned) == 4, unsigned_sizes_match);
+STATIC_ASSERT(sizeof(int) == 4, int_sizes_match);
+STATIC_ASSERT(sizeof(unsigned long) == 8, unsigned_long_sizes_match);
+STATIC_ASSERT(sizeof(long) == 8, long_sizes_match);
+STATIC_ASSERT(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, little_endian);
+
+/*
+static long compress_syscall(long sysno, long a0, long a1, long a2, long a3,
+			     long a4, long a5) {
+	long ret;
+
+	__asm__ volatile(
+	    "movq %1, %%rax\n\t"
+	    "movq %2, %%rdi\n\t"
+	    "movq %3, %%rsi\n\t"
+	    "movq %4, %%rdx\n\t"
+	    "movq %5, %%r10\n\t"
+	    "movq %6, %%r8\n\t"
+	    "movq %7, %%r9\n\t"
+	    "syscall\n\t"
+	    "movq %%rax, %0"
+	    : "=r"(ret)
+	    : "r"(sysno), "r"(a0), "r"(a1), "r"(a2), "r"(a3), "r"(a4), "r"(a5)
+	    : "rax", "rdi", "rsi", "rdx", "r10", "r8", "r9", "rcx", "r11", "cc",
+	      "memory");
+
+	return ret;
+}
+*/
+
+__asm__(
+    ".section .text\n"
+    ".local compress_syscall\n"
+    "compress_syscall:\n"
+    "push    %rbp\n"
+    "mov     %rdi, %rbp\n"
+    "mov     %rsi, %rax\n"
+    "mov     %rdx, %rdi\n"
+    "mov     %rcx, %rsi\n"
+    "mov     %r8,  %rdx\n"
+    "mov     %r9,  %r10\n"
+    "mov     16(%rsp), %r8\n"
+    "mov     24(%rsp), %r9\n"
+    "syscall\n"
+    "mov     %rax, 0(%rbp)\n"
+    "pop     %rbp\n"
+    "ret\n");
+void compress_syscall(void *ret, long sysno, long a0, long a1, long a2, long a3,
+		      long a4, long a5);
+static long compress_write(long fd, const void *buf, long len);
+
+static long compress_write(long fd, const void *buf, long len) {
+	long ret;
+	compress_syscall(&ret, 1, fd, (long)buf, len, 0, 0, 0);
+	return ret;
+}
+
+#define MAX_CODE_LENGTH 10
+#define REPEAT_VALUE_INDEX (MAX_CODE_LENGTH + 1)
+#define REPEAT_ZERO_LONG_INDEX (MAX_CODE_LENGTH + 2)
+#define REPEAT_ZERO_SHORT_INDEX (MAX_CODE_LENGTH + 3)
+#define MAX_BOOK_CODE_LENGTH 7
+#define MAX_BOOK_CODES (MAX_CODE_LENGTH + 4)
+#define LEN_SHIFT 4
+#define DIST_MASK 0xF
+#define SYMBOL_TERM 256
+#define MATCH_OFFSET (SYMBOL_TERM + 1)
+#define MAX_MATCH_CODE 127
+#define SYMBOL_COUNT (MATCH_OFFSET + MAX_MATCH_CODE + 1)
+
+#define LZ_HASH_ENTRIES (1 << 16)
+#define CEIL(x, y) ((x + (y - 1)) & ~(y - 1))
+
+void *memset(void *dest, int c, unsigned long n);
+void *memset(void *dest, int c, unsigned long n) {
+	char *tmp = dest;
+	while (n--) *tmp++ = (char)c;
+	return dest;
+}
+
+void *memcpy(void *dest, const void *src, unsigned long n);
+void *memcpy(void *dest, const void *src, unsigned long n) {
+	char *d = (char *)dest;
+	const char *s = src;
+	while (n--) *d++ = *s++;
+	return dest;
+}
+
+unsigned long strlen(const char *x);
+unsigned long strlen(const char *x) {
+	const char *y = x;
+	while (*x) x++;
+	return x - y;
+}
+
+static void zero_memory(void *ptr, long len_bytes) {
+#ifdef __AVX2__
+	char *p = (char *)ptr;
+	char *end = p + len_bytes;
+	__asm__ __volatile__(
+	    "vpxor  %%ymm0, %%ymm0, %%ymm0\n\t"
+	    "0:\n\t"
+	    "vmovdqu %%ymm0, (%0)\n\t"
+	    "add    $32, %0\n\t"
+	    "cmp    %0, %1\n\t"
+	    "jb     0b"
+	    : "+r"(p)
+	    : "r"(end)
+	    : "ymm0", "cc", "memory");
+#else
+	memset(ptr, 0, len_bytes);
+#endif
+}
+
+static void compress_find_matches(
+    const void *in_param, unsigned len,
+    unsigned char match_array[2 * MAX_COMPRESS_LEN + 32],
+    unsigned frequencies[CEIL(SYMBOL_COUNT, 8)]) {
+	const char *in = in_param;
+	unsigned i;
+	unsigned short table[LZ_HASH_ENTRIES];
+	(void)in;
+	(void)len;
+	(void)match_array;
+	(void)frequencies;
+	(void)table;
+
+	zero_memory(table, sizeof(table));
+
+	for (i = 0; i < SYMBOL_COUNT; i++) frequencies[i] = i;
+	for (i = 0; i < 2 * MAX_COMPRESS_LEN + 1; i++) match_array[i] = in[i];
+}
+
+static long compress_bound(long source_len) { return source_len + 3; }
+static int compress_block(const void *in, unsigned len, void *out,
+			  unsigned capacity) {
+	long ret;
+	unsigned frequencies[CEIL(SYMBOL_COUNT, 8)];
+	/*
+	unsigned book_frequencies[MAX_BOOK_CODES] = {0};
+	CodeLength code_lengths[SYMBOL_COUNT] = {0};
+	CodeLength book[MAX_BOOK_CODES] = {0};
+	*/
+	unsigned char match_array[2 * MAX_COMPRESS_LEN + 32];
+
+	zero_memory(match_array, sizeof(match_array));
+	(void)zero_memory;
+
+	(void)in;
+	(void)len;
+	(void)out;
+	(void)capacity;
+	(void)frequencies;
+	(void)match_array;
+	(void)compress_find_matches;
+
+	compress_find_matches(in, len, match_array, frequencies);
+
+	compress_syscall(&ret, 1, 2, (long)"abcd", 4, 0, 0, 0);
+	(void)compress_write;
+	(void)ret;
+	return 0;
+}
+static int decompress_block(const void *in, unsigned len, void *out,
+			    unsigned capacity) {
+	(void)in;
+	(void)len;
+	(void)out;
+	(void)capacity;
+	return 0;
+}
+
+#endif /* COMPRESS_IMPL_GUARD */
+#endif /* COMPRESS_IMPL */
+#endif /* _COMPRESS_H__ */
