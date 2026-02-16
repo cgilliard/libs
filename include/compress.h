@@ -284,7 +284,7 @@ __inline static int compress_clz32(unsigned int x) {
 	__attribute__((optimize("no-tree-loop-distribute-patterns")))
 #elif defined(__clang__)
 #define NO_LOOP_PATTERN_ATTR \
-	__attribute__((optnone))  // or just volatile as fallback
+	__attribute__((optnone))
 #else
 #define NO_LOOP_PATTERN_ATTR
 #endif
