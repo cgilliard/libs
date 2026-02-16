@@ -9,6 +9,7 @@ CFLAGS="${CFLAGS:--O3 -fno-stack-clash-protection}"
 INCLUDE_DIR=include
 INCLUDE="-I${INCLUDE_DIR}";
 CSTRICT="-nostdlib \
+	-fvisibility=hidden \
         -std=c99 \
         -Werror \
         -Wextra \
@@ -75,7 +76,8 @@ if [ "${TEST}" = "1" ]; then
 	-o ${BIN_DIR}/test \
 	test/main.c";
     echo ${COMMAND};
-    ${COMMAND};
+    ${COMMAND} || exit 1;
+    ${BIN_DIR}/test || exit 1;
 elif [ "${ALL}" = "1" ]; then
     for src in "$INCLUDE_DIR"/libfam/*.h; do
 	base=$(basename "$src" .h)
@@ -92,7 +94,7 @@ elif [ "${ALL}" = "1" ]; then
             ${src} \
             -o ${LIB_DIR}/lib${base}.so"
         echo ${COMMAND};
-        ${COMMAND}
+        ${COMMAND} || exit 1;
     done
 elif [ "${INSTALL}" = "1" ]; then
 	mkdir -p /usr/lib/libfam/

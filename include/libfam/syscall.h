@@ -23,6 +23,8 @@ i32 close(i32 fd);
 #ifndef SYSCALL_IMPL_GUARD
 #define SYSCALL_IMPL_GUARD
 
+#include <libfam/utils.h>
+
 #ifdef __x86_64__
 __asm__(
     ".section .text\n"
@@ -64,7 +66,7 @@ __asm__(
 void syscall(void *ret, i64 sysno, i64 a0, i64 a1, i64 a2, i64 a3, i64 a4,
 	     i64 a5);
 
-i32 clock_gettime(i32 clockid, struct timespec *tp) {
+PUBLIC i32 clock_gettime(i32 clockid, struct timespec *tp) {
 	i64 result;
 #ifdef __aarch64__
 	syscall(&result, 113, clockid, (i64)tp, 0, 0, 0, 0);
@@ -74,7 +76,8 @@ i32 clock_gettime(i32 clockid, struct timespec *tp) {
 	return result;
 }
 
-void *mmap(void *addr, u64 length, i32 prot, i32 flags, i32 fd, i64 offset) {
+PUBLIC void *mmap(void *addr, u64 length, i32 prot, i32 flags, i32 fd,
+		  i64 offset) {
 	void *result;
 #ifdef __aarch64__
 	syscall(&result, 222, (i64)addr, length, prot, flags, fd, offset);
@@ -83,7 +86,8 @@ void *mmap(void *addr, u64 length, i32 prot, i32 flags, i32 fd, i64 offset) {
 #endif
 	return result;
 }
-i32 munmap(void *addr, u64 len) {
+
+PUBLIC i32 munmap(void *addr, u64 len) {
 	i64 result;
 #ifdef __aarch64__
 	syscall(&result, 215, (i64)addr, len, 0, 0, 0, 0);
@@ -93,7 +97,17 @@ i32 munmap(void *addr, u64 len) {
 	return result;
 }
 
-void exit_group(i32 status) {
+PUBLIC i32 clone(i64 flags, void *sp) {
+	i64 result;
+#ifdef __aarch64__
+	syscall(&result, 220, flags, (i64)sp, 0, 0, 0, 0);
+#elif defined(__x86_64__)
+	syscall(&result, 56, flags, (i64)sp, 0, 0, 0, 0);
+#endif
+	return result;
+}
+
+PUBLIC void exit_group(i32 status) {
 #ifdef __aarch64__
 	syscall(&status, 94, status, 0, 0, 0, 0, 0);
 #elif defined(__x86_64__)
@@ -101,20 +115,26 @@ void exit_group(i32 status) {
 #endif
 }
 
-i32 io_uring_setup(u32 entries, struct io_uring_params *params) {
+PUBLIC i32 io_uring_setup(u32 entries, struct io_uring_params *params) {
 	i64 result;
 	syscall(&result, 425, entries, (i64)params, 0, 0, 0, 0);
 	return result;
 }
 
-i32 io_uring_enter2(u32 fd, u32 to_submit, u32 min_complete, u32 flags,
-		    void *arg, u64 sz) {
+PUBLIC i32 io_uring_enter2(u32 fd, u32 to_submit, u32 min_complete, u32 flags,
+			   void *arg, u64 sz) {
 	i64 result;
 	syscall(&result, 426, fd, to_submit, min_complete, flags, (i64)arg, sz);
 	return result;
 }
 
-i32 close(i32 fd) {
+PUBLIC i32 io_uring_register(u32 fd, u32 opcode, void *arg, u32 nr_args) {
+	i64 result;
+	syscall(&result, 427, fd, opcode, (i64)arg, nr_args, 0, 0);
+	return result;
+}
+
+PUBLIC i32 close(i32 fd) {
 	i64 result;
 #ifdef __aarch64__
 	syscall(&result, 57, fd, 0, 0, 0, 0, 0);
@@ -124,5 +144,25 @@ i32 close(i32 fd) {
 	return result;
 }
 
+#ifdef TEST
+
+#include <libfam/mmap.h>
+
+Test(mmap) {
+	void *v = mmap(NULL, 4096, PROT_READ | PROT_WRITE,
+		       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	ASSERT(v);
+	ASSERT(v != MAP_FAILED);
+	munmap(v, 4096);
+}
+
+Test(clone) {
+	i32 pid = clone(0, NULL);
+	if (!pid) exit_group(0);
+	ASSERT(pid);
+}
+
+#endif /* TEST */
 #endif /* SYSCALL_IMPL_GUARD */
 #endif /* SYSCALL_IMPL */
+

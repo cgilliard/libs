@@ -230,5 +230,15 @@ PUBLIC i32 string_to_u64(const u8 *buf, u64 len, u64 *result) {
 	return 0;
 }
 
+#ifdef TEST
+
+Test(strlen) {
+	u64 len = strlen("abc");
+	ASSERT(len == 3);
+	len = strlen("");
+	ASSERT(len == 0);
+}
+
+#endif /* TEST */
 #endif /* STRING_IMPL_GUARD */
 #endif /* STRING_IMPL */

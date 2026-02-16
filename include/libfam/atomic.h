@@ -13,6 +13,17 @@
 #endif
 #endif /* !__TINYC__ */
 
+#ifndef __ATOMIC_RELAXED
+#define __ATOMIC_RELAXED 0
+#define __ATOMIC_CONSUME 1
+#define __ATOMIC_ACQUIRE 2
+#define __ATOMIC_RELEASE 3
+#define __ATOMIC_ACQ_REL 4
+#define __ATOMIC_SEQ_CST 5
+#endif /* !__ATOMIC_RELAXED */
+
+void __atomic_thread_fence(int mem_order);
+
 static i32 atomic_fetch_add32(u32 *ptr, u32 v) {
 #if HAS_BUILTINS == 1
 	return __atomic_fetch_add(ptr, v, __ATOMIC_SEQ_CST);

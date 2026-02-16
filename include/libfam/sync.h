@@ -20,6 +20,7 @@ void sync_destroy(Sync *sync);
 
 #include <libfam/iouring.h>
 #include <libfam/mmap.h>
+#include <libfam/utils.h>
 
 struct Sync {
 	struct io_uring_params params;
@@ -39,7 +40,7 @@ struct Sync {
 	u32 *cq_mask;
 };
 
-i32 sync_init(Sync **s) {
+PUBLIC i32 sync_init(Sync **s) {
 	Sync *sync = NULL;
 
 	sync = mmap(NULL, sizeof(Sync), PROT_READ | PROT_WRITE,
@@ -101,7 +102,7 @@ i32 sync_init(Sync **s) {
 	return 0;
 }
 
-i32 sync_execute(Sync *sync, const struct io_uring_sqe sqe) {
+PUBLIC i32 sync_execute(Sync *sync, const struct io_uring_sqe sqe) {
 	i32 ret;
 	u32 cq_mask = *sync->cq_mask;
 	u32 sq_mask = *sync->sq_mask;
@@ -125,7 +126,7 @@ i32 sync_execute(Sync *sync, const struct io_uring_sqe sqe) {
 	return ret;
 }
 
-void sync_destroy(Sync *sync) {
+PUBLIC void sync_destroy(Sync *sync) {
 	if (sync) {
 		if (sync->sq_ring) munmap(sync->sq_ring, sync->sq_ring_size);
 		sync->sq_ring = NULL;
