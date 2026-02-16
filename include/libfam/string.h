@@ -1,0 +1,234 @@
+#ifndef _STRING_H
+#define _STRING_H
+
+#include <libfam/types.h>
+
+#define MAX_U64_STRING_LEN 255
+#define MAX_I64_STRING_LEN (MAX_U64_STRING_LEN + 1)
+#define MAX_F64_STRING_LEN 64
+
+typedef enum {
+	Int64DisplayTypeDecimal,
+	Int64DisplayTypeHexUpper,
+	Int64DisplayTypeHexLower,
+	Int64DisplayTypeBinary,
+	Int64DisplayTypeCommas,
+} Int64DisplayType;
+
+u64 strlen(const char *msg);
+i32 strncmp(const char *x, const char *y, u64 n);
+char *strcpy(char *dest, const char *src);
+char *strncpy(char *dst, const char *src, u64 n);
+i32 strcmp(const char *x, const char *y);
+char *strstr(const char *s, const char *sub);
+char *strcat(char *dest, const char *src);
+void *memset(void *ptr, i32 x, u64 n);
+void *memcpy(void *dst, const void *src, u64 n);
+void *memmove(void *dst, const void *src, u64 n);
+i32 memcmp(const void *s1, const void *s2, u64 n);
+u8 f64_to_string(u8 buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
+		 bool commas);
+i32 string_to_u64(const u8 *buf, u64 len, u64 *result);
+u8 i64_to_string(u8 buf[MAX_I64_STRING_LEN], i64 value, Int64DisplayType t);
+u8 u64_to_string(u8 buf[MAX_U64_STRING_LEN], u64 value, Int64DisplayType t);
+
+__attribute__((unused, noinline)) static void secure_zero(void *ptr, u64 len) {
+	volatile u8 *p = (volatile u8 *)ptr;
+	while (len--) *p++ = 0;
+}
+
+void secure_zero32(u8 buf[32]);
+
+#endif /* _STRING_H */
+
+#ifdef STRING_IMPL
+#ifndef STRING_IMPL_GUARD
+#define STRING_IMPL_GUARD
+
+#include <libfam/errno.h>
+#include <libfam/limits.h>
+#include <libfam/utils.h>
+
+PUBLIC u64 strlen(const char *x) {
+	const char *y = x;
+	while (*x) x++;
+	return x - y;
+}
+
+PUBLIC i32 strcmp(const char *x, const char *y) {
+	while (*x == *y && *x) x++, y++;
+	return *x > *y ? 1 : *y > *x ? -1 : 0;
+}
+
+PUBLIC char *strcpy(char *dest, const char *src) {
+	char *ptr = dest;
+	while ((*ptr++ = *src++));
+	return dest;
+}
+
+PUBLIC char *strncpy(char *dest, const char *src, u64 n) {
+	u64 i;
+	for (i = 0; i < n && src[i] != '\0'; i++) dest[i] = src[i];
+	for (; i < n; i++) dest[i] = '\0';
+	return dest;
+}
+
+PUBLIC char *strcat(char *dest, const char *src) {
+	char *ptr = dest;
+	while (*ptr) ptr++;
+	while ((*ptr++ = *src++));
+	return dest;
+}
+
+PUBLIC i32 strncmp(const char *x, const char *y, u64 n) {
+	while (n > 0 && *x == *y && *x) x++, y++, n--;
+	if (n == 0) return 0;
+	return (char)*x - (char)*y;
+}
+
+PUBLIC void *memset(void *dest, i32 c, u64 n) {
+	u8 *tmp = dest;
+	while (n--) *tmp++ = (char)c;
+	return dest;
+}
+
+PUBLIC void *memcpy(void *dest, const void *src, u64 n) {
+	u8 *d = (u8 *)dest;
+	const u8 *s = (const void *)src;
+	while (n--) *d++ = *s++;
+	return dest;
+}
+
+PUBLIC i32 memcmp(const void *s1, const void *s2, u64 n) {
+	const u8 *p1 = (const void *)s1;
+	const u8 *p2 = (const void *)s2;
+	while (n--) {
+		i32 diff = *p1++ - *p2++;
+		if (diff) return diff;
+	}
+	return 0;
+}
+
+PUBLIC void *memmove(void *dest, const void *src, u64 n) {
+	u8 *d = (void *)((u8 *)dest + n);
+	const u8 *s = (const void *)((const u8 *)src + n);
+	while (n--) d--, s--, *d = *s;
+	return dest;
+}
+
+PUBLIC u8 f64_to_string(u8 buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
+			bool commas) {
+	u64 pos = 0;
+	i32 is_negative;
+	u64 int_part;
+	f64 frac_part;
+	i32 i;
+	u8 temp[MAX_F64_STRING_LEN];
+
+	if (v != v) {
+		buf[0] = 'n';
+		buf[1] = 'a';
+		buf[2] = 'n';
+		buf[3] = '\0';
+		return 3;
+	}
+
+	if (v > 1.7976931348623157e308 || v < -1.7976931348623157e308) {
+		if (v < 0) buf[pos++] = '-';
+		buf[pos++] = 'i';
+		buf[pos++] = 'n';
+		buf[pos++] = 'f';
+		buf[pos] = '\0';
+		return pos;
+	}
+
+	is_negative = v < 0;
+	if (is_negative) {
+		buf[pos++] = '-';
+		v = -v;
+	}
+
+	if (v == 0.0) {
+		buf[pos++] = '0';
+		buf[pos] = '\0';
+		return pos;
+	}
+
+	if (max_decimals < 0) max_decimals = 0;
+	if (max_decimals > 17) max_decimals = 17;
+
+	int_part = (u64)v;
+	frac_part = v - (f64)int_part;
+
+	if (max_decimals > 0) {
+		f64 rounding = 0.5;
+		for (i = 0; i < max_decimals; i++) rounding /= 10.0;
+		v += rounding;
+		int_part = (u64)v;
+		frac_part = v - (f64)int_part;
+	}
+
+	if (int_part == 0)
+		buf[pos++] = '0';
+	else {
+		i = 0;
+		while (int_part > 0) {
+			temp[i++] = '0' + (int_part % 10);
+			int_part /= 10;
+		}
+		if (commas) {
+			u64 digit_count = i;
+			u64 digits_until_comma =
+			    digit_count % 3 ? digit_count % 3 : 3;
+			i--;
+			while (i >= 0) {
+				buf[pos++] = temp[i--];
+				digits_until_comma--;
+				if (digits_until_comma == 0 && i >= 0) {
+					buf[pos++] = ',';
+					digits_until_comma = 3;
+				}
+			}
+		} else
+			while (i > 0) buf[pos++] = temp[--i];
+	}
+
+	if (frac_part > 0 && max_decimals > 0) {
+		buf[pos++] = '.';
+		u64 frac_start = pos;
+		i32 digits = 0;
+		while (digits < max_decimals) {
+			frac_part *= 10;
+			i32 digit = (i32)frac_part;
+			buf[pos++] = '0' + digit;
+			frac_part -= digit;
+			digits++;
+		}
+		while (pos > frac_start && buf[pos - 1] == '0') pos--;
+		if (pos == frac_start) pos--;
+	}
+
+	buf[pos] = '\0';
+	return pos;
+}
+
+PUBLIC i32 string_to_u64(const u8 *buf, u64 len, u64 *result) {
+	u64 i = 0;
+	u8 c;
+
+	*result = 0;
+	if (!buf || !len) return -EINVAL;
+	while (i < len && (buf[i] == ' ' || buf[i] == '\t')) i++;
+	if (i == len) return -EINVAL;
+	while (i < len) {
+		c = buf[i];
+		if (c < '0' || c > '9') return -EINVAL;
+		if (*result > U64_MAX / 10) return -EOVERFLOW;
+		*result = *result * 10 + (c - '0');
+		i++;
+	}
+	return 0;
+}
+
+#endif /* STRING_IMPL_GUARD */
+#endif /* STRING_IMPL */

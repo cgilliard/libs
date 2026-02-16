@@ -1,23 +1,16 @@
 #!/bin/sh
 
-LIB=0;
-
-for arg in "$@"; do
-    case "$arg" in
-        lib)
-            LIB=1;
-            ;;
-    esac
-done
-
+ALL=0;
+TEST=0;
+CLEAN=0;
+INSTALL=0;
 CC="${CC:-clang}"
 CFLAGS="${CFLAGS:--O3 -fno-stack-clash-protection}"
-INCLUDE="-Iinclude";
+INCLUDE_DIR=include
+INCLUDE="-I${INCLUDE_DIR}";
 CSTRICT="-nostdlib \
-        -std=c89 \
-        -pedantic \
+        -std=c99 \
         -Werror \
-        -Wall \
         -Wextra \
         -Wshadow \
         -Wpointer-arith \
@@ -27,9 +20,30 @@ CSTRICT="-nostdlib \
 BIN_DIR=target/bin
 LIB_DIR=target/lib
 
-if [ "${LIB}" = "1" ]; then
+for arg in "$@"; do
+    case "$arg" in
+        all)
+            ALL=1;
+            ;;
+	test)
+	    TEST=1;
+	    ;;
+	clean)
+	    CLEAN=1;
+	    ;;
+	install)
+	    INSTALL=1;
+	    ;;
+    esac
+done
+
+if [ "${CLEAN}" = "0" ] && [ "${TEST}" = "0" ] && [ "${INSTALL}" = "0" ]; then
+	ALL=1;
+fi
+
+if [ "${ALL}" = "1" ]; then
     mkdir -p ${LIB_DIR};
-else
+elif [ "${TEST}" = "1" ]; then
     mkdir -p ${BIN_DIR};
 fi
 
@@ -47,28 +61,41 @@ case "$ARCH" in
         ;;
 esac
 
+if [ "${CLEAN}" = "1" ]; then
+	rm -rf ${BIN_DIR} ${LIB_DIR}
+fi
 
-if [ "${LIB}" = "0" ]; then
+
+if [ "${TEST}" = "1" ]; then
     COMMAND="${CC} \
 	${INCLUDE} \
 	${ARCH_FLAGS} \
 	${CFLAGS} \
 	${CSTRICT} \
 	-o ${BIN_DIR}/test \
-	main.c";
-else
-    COMMAND="${CC} \
-	${INCLUDE} \
-	${ARCH_FLAGS} \
-	${CFLAGS} \
-	${CSTRICT} \
-	-shared \
-	-fPIC \
-	-DCOMPRESS_IMPL \
-	-x c  \
-	include/compress.h
-	-o ${LIB_DIR}/libcompress.so"
+	test/main.c";
+    echo ${COMMAND};
+    ${COMMAND};
+elif [ "${ALL}" = "1" ]; then
+    for src in "$INCLUDE_DIR"/libfam/*.h; do
+	base=$(basename "$src" .h)
+        impl=$(echo "$base" | tr 'a-z' 'A-Z')_IMPL
+        COMMAND="${CC} \
+	    ${INCLUDE} \
+            ${ARCH_FLAGS} \
+            ${CFLAGS} \
+            ${CSTRICT} \
+            -shared \
+            -fPIC \
+            -D${impl} \
+            -x c  \
+            ${src} \
+            -o ${LIB_DIR}/lib${base}.so"
+        echo ${COMMAND};
+        ${COMMAND}
+    done
+elif [ "${INSTALL}" = "1" ]; then
+	mkdir -p /usr/lib/libfam/
+	cp -rp ${LIB_DIR}/*.so /usr/lib/libfam
 fi
 
-echo ${COMMAND};
-${COMMAND};
