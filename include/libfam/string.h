@@ -255,9 +255,9 @@ PUBLIC u8 u128_to_string(char buf[MAX_U128_STRING_LEN], u128 value,
 	bool commas = t == Int128DisplayTypeCommas;
 	u8 mod_val =
 	    hex ? 16 : (commas || t == Int128DisplayTypeDecimal ? 10 : 2);
-	const u8 *hex_code = t == Int128DisplayTypeHexUpper
-				 ? "0123456789ABCDEF"
-				 : "0123456789abcdef";
+	const char *hex_code = t == Int128DisplayTypeHexUpper
+				   ? "0123456789ABCDEF"
+				   : "0123456789abcdef";
 	if (hex) {
 		j = 2;
 		buf[0] = '0';
