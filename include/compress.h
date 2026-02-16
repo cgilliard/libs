@@ -12,9 +12,6 @@ int decompress_block(const void *in, unsigned len, void *out,
 #ifndef COMPRESS_IMPL_GUARD
 #define COMPRESS_IMPL_GUARD
 
-long write(long fd, const void *buf, long len);
-static long write_num(int fd, long num);
-
 #ifndef EFAULT
 #define EFAULT 14
 #endif
@@ -225,11 +222,13 @@ static const unsigned long bitstream_masks[65] = {
     0x0FFFFFFFFFFFFFFFUL, 0x1FFFFFFFFFFFFFFFUL, 0x3FFFFFFFFFFFFFFFUL,
     0x7FFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL};
 
+/*
 __inline static unsigned long compress_strlen(const char *x) {
 	const char *y = x;
 	while (*x) x++;
 	return x - y;
 }
+*/
 
 __inline static void *compress_memcpy(void *dest, const void *src,
 				      unsigned long n) {
@@ -290,13 +289,12 @@ __inline static int compress_clz32(unsigned int x) {
 #define NO_LOOP_PATTERN_ATTR
 #endif
 NO_LOOP_PATTERN_ATTR
-static void *compress_memset(void *dest, int c,
-			     unsigned long n) {
+static void *compress_memset(void *dest, int c, unsigned long n) {
 	char *tmp = dest;
 	while (n--) *tmp++ = (char)c;
 	return dest;
 }
-#endif /* __TINYC__ */
+#endif /* __AVX2__ */
 
 __inline static void compress_zero_memory(void *ptr, long len_bytes) {
 #ifdef __AVX2__
@@ -596,9 +594,9 @@ __inline static void compress_calculate_lengths(const unsigned *frequencies,
 __inline static void compress_calculate_codes(CodeLength *code_lengths,
 					      unsigned short count) {
 	unsigned i, j, code = 0;
-	unsigned length_count[CEIL(MAX_CODE_LENGTH + 1, 8)] /*= {0}*/;
-	unsigned length_start[CEIL(MAX_CODE_LENGTH + 1, 8)] /*= {0}*/;
-	unsigned length_pos[CEIL(MAX_CODE_LENGTH + 1, 8)] /*= {0}*/;
+	unsigned length_count[CEIL(MAX_CODE_LENGTH + 1, 8)];
+	unsigned length_start[CEIL(MAX_CODE_LENGTH + 1, 8)];
+	unsigned length_pos[CEIL(MAX_CODE_LENGTH + 1, 8)];
 
 	compress_zero_memory(length_count, sizeof(length_count));
 	compress_zero_memory(length_start, sizeof(length_start));

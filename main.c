@@ -100,6 +100,26 @@ void mmap(void **ret, void *addr, long length, long prot, long flags, long fd,
 #endif
 }
 
+static int open(const char *pathname, int flags, int mode) {
+	long ret;
+#ifdef __aarch64__
+	syscall(&ret, 56, -100, (long)pathname, flags, mode, 0, 0);
+#else
+	syscall(&ret, 2, (long)pathname, flags, mode, 0, 0, 0);
+#endif
+	return ret;
+}
+
+static long lseek(long fd, long offset, long whence) {
+	long ret;
+#ifdef __aarch64__
+	syscall(&ret, 62, fd, offset, whence, 0, 0, 0);
+#else
+	syscall(&ret, 8, fd, offset, whence, 0, 0, 0);
+#endif
+	return ret;
+}
+
 void *memmove(void *dest, const void *src, unsigned long n);
 void *memmove(void *dest, const void *src, unsigned long n) {
 	unsigned char *d = (void *)((unsigned char *)dest + n);
@@ -171,27 +191,6 @@ static void *fmap_ro(long fd, long size, long offset) {
 	void *ret = 0;
 	mmap(&ret, 0, size, 1, 1, fd, offset);
 	if ((long)ret < 0) ret = 0;
-	return ret;
-}
-
-static int open(const char *pathname, int flags, int mode) {
-	long ret;
-#ifdef __aarch64__
-	syscall(&ret, 56, -100, (long)pathname, flags, mode, 0, 0);
-#else
-	syscall(&ret, 2, (long)pathname, flags, mode, 0, 0, 0);
-#endif
-	return ret;
-}
-
-static long lseek(long fd, long offset, long whence) {
-	long ret;
-#ifdef __aarch64__
-	syscall(&ret, 62, fd, offset, whence, 0, 0, 0);
-#else
-	syscall(&ret, 8, fd, offset, whence, 0, 0, 0);
-#endif
-
 	return ret;
 }
 
