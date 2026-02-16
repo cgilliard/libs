@@ -13,6 +13,8 @@ typedef unsigned char u8;
 typedef unsigned short int u16;
 typedef unsigned int u32;
 typedef unsigned long u64;
+typedef __uint128_t u128;
+typedef __int128_t i128;
 typedef double f64;
 
 #ifndef bool
@@ -43,6 +45,8 @@ STATIC_ASSERT(sizeof(u32) == 4, u32_sizes_match);
 STATIC_ASSERT(sizeof(i32) == 4, i32_sizes_match);
 STATIC_ASSERT(sizeof(u64) == 8, u64_sizes_match);
 STATIC_ASSERT(sizeof(i64) == 8, i64_sizes_match);
+STATIC_ASSERT(sizeof(u128) == 16, u128_sizes_match);
+STATIC_ASSERT(sizeof(i128) == 16, i128_sizes_match);
 STATIC_ASSERT(sizeof(f64) == 8, f64_sizes_match);
 STATIC_ASSERT(sizeof(void *) == 8, os_64_bit);
 STATIC_ASSERT(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, little_endian);

@@ -30,7 +30,7 @@ i32 init_environ(char **envp, Arena *a);
 #include <libfam/syscall.h>
 #include <libfam/utils.h>
 
-RbTree __env_tree = RBTREE_INIT;
+RbTree __env_tree;
 typedef struct {
 	RbTreeNode reserved;
 	const char *key;
@@ -79,6 +79,8 @@ PUBLIC char *getenv(const char *name) {
 
 PUBLIC i32 init_environ(char **envp, Arena *a) {
 	u64 i;
+	__env_tree.root = NULL;
+
 	for (i = 0; envp[i]; i++) {
 		i32 res;
 		char *key, *value;

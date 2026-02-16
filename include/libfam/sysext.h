@@ -15,7 +15,7 @@ i32 unlink(const char *pathname);
 i32 waitpid(i32 pid);
 i32 fsync(i32 fd);
 i32 fdatasync(i32 fd);
-i32 open(const u8 *path, i32 flags, u32 mode);
+i32 open(const char *path, i32 flags, u32 mode);
 i64 pread(i32 fd, void *buf, u64 len, u64 offset);
 i32 fallocate(i32 fd, u64 new_size);
 i32 fstatx(i32 fd, struct statx *st);
@@ -145,7 +145,7 @@ PUBLIC i32 fdatasync(i32 fd) {
 	return sync_execute(__global_sync, sqe);
 }
 
-PUBLIC i32 open(const u8 *path, i32 flags, u32 mode) {
+PUBLIC i32 open(const char *path, i32 flags, u32 mode) {
 	i32 result;
 	struct open_how how = {.flags = flags, .mode = mode};
 	struct io_uring_sqe sqe = {.opcode = IORING_OP_OPENAT2,
