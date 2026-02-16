@@ -1,5 +1,4 @@
-#define COMPRESS_IMPL
-#include "include/compress.h"
+#include <compress.h>
 
 int main(int argc, char **argv, char **envp);
 
@@ -240,3 +239,7 @@ int main(int argc, char **argv, char **envp) {
 	return r;
 	(void)envp;
 }
+
+#define COMPRESS_IMPL
+#include <compress.h>
+

@@ -8,6 +8,8 @@ int compress_block(const void *in, unsigned len, void *out, unsigned capacity);
 int decompress_block(const void *in, unsigned len, void *out,
 		     unsigned capacity);
 
+#endif /* _COMPRESS_H */
+
 #ifdef COMPRESS_IMPL
 #ifndef COMPRESS_IMPL_GUARD
 #define COMPRESS_IMPL_GUARD
@@ -283,8 +285,7 @@ __inline static int compress_clz32(unsigned int x) {
 #define NO_LOOP_PATTERN_ATTR \
 	__attribute__((optimize("no-tree-loop-distribute-patterns")))
 #elif defined(__clang__)
-#define NO_LOOP_PATTERN_ATTR \
-	__attribute__((optnone))
+#define NO_LOOP_PATTERN_ATTR __attribute__((optnone))
 #else
 #define NO_LOOP_PATTERN_ATTR
 #endif
@@ -1074,4 +1075,3 @@ int decompress_block(const void *in, unsigned len, void *out,
 
 #endif /* COMPRESS_IMPL_GUARD */
 #endif /* COMPRESS_IMPL */
-#endif /* _COMPRESS_H__ */

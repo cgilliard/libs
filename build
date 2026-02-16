@@ -12,6 +12,7 @@ done
 
 CC="${CC:-clang}"
 CFLAGS="${CFLAGS:--O3 -fno-stack-clash-protection}"
+INCLUDE="-Iinclude";
 CSTRICT="-nostdlib \
         -std=c89 \
         -pedantic \
@@ -49,6 +50,7 @@ esac
 
 if [ "${LIB}" = "0" ]; then
     COMMAND="${CC} \
+	${INCLUDE} \
 	${ARCH_FLAGS} \
 	${CFLAGS} \
 	${CSTRICT} \
@@ -56,6 +58,7 @@ if [ "${LIB}" = "0" ]; then
 	main.c";
 else
     COMMAND="${CC} \
+	${INCLUDE} \
 	${ARCH_FLAGS} \
 	${CFLAGS} \
 	${CSTRICT} \

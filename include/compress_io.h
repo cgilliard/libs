@@ -1,7 +1,7 @@
 #ifndef _COMPRESS_IO_H__
 #define _COMPRESS_IO_H__
 
-#include "compress.h"
+#include <compress.h>
 
 int compress_file(int infd, unsigned long in_offset, int outfd,
 		  unsigned long out_offset);
@@ -12,9 +12,24 @@ int compress_stream(int infd, unsigned long in_offset, int outfd,
 int decompress_stream(int infd, unsigned long in_offset, int outfd,
 		      unsigned long out_offset);
 
+#endif /* _COMPRESS_IO_H__ */
+
 #ifdef COMPRESS_IO_IMPL
 #ifndef COMPRESS_IO_IMPL_GUARD
 #define COMPRESS_IO_IMPL_GUARD
+
+#ifndef EFAULT
+#define EFAULT 14
+#endif
+#ifndef EINVAL
+#define EINVAL 22
+#endif
+#ifndef EPROTO
+#define EPROTO 71
+#endif
+#ifndef EOVERFLOW
+#define EOVERFLOW 75
+#endif
 
 #define MAX_PROCS 128
 
@@ -63,8 +78,8 @@ int compress_file(int infd, unsigned long in_offset, int outfd,
 
 	state->chunks = ((st.stx_size - in_offset) + MAX_COMPRESS_LEN - 1) /
 			MAX_COMPRESS_LEN;
-	state->procs = MIN(get_physical_cores_cpuid(), state->chunks);
-	state->procs = MIN(state->procs, MAX_PROCS);
+	state->procs = min(get_physical_cores_cpuid(), state->chunks);
+	state->procs = min(state->procs, MAX_PROCS);
 	state->infd = infd;
 	state->in_offset = in_offset;
 	state->outfd = outfd;
@@ -93,5 +108,4 @@ cleanup:
 
 #endif /* COMPRESS_IO_IMPL_GUARD */
 #endif /* COMPRESS_IO_IMPL */
-#endif /* _COMPRESS_IO_H__ */
 
