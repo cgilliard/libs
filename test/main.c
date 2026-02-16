@@ -72,7 +72,7 @@ const char *SPACER =(void*)
 
 int main(int argc, char **argv, char **envp) {
 	i32 count, i, test_count;
-	Arena *a;
+	Arena *a = NULL;
 	test_count = 0;
 	count = __init_array_end - __init_array_start;
 	for (i = 0; i < count; i++) __init_array_start[i]();

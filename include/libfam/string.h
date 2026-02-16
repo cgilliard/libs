@@ -3,17 +3,17 @@
 
 #include <libfam/types.h>
 
-#define MAX_U64_STRING_LEN 25
-#define MAX_I64_STRING_LEN (MAX_U64_STRING_LEN + 1)
+#define MAX_U128_STRING_LEN 255
+#define MAX_I128_STRING_LEN (MAX_U128_STRING_LEN + 1)
 #define MAX_F64_STRING_LEN 64
 
 typedef enum {
-	Int64DisplayTypeDecimal,
-	Int64DisplayTypeHexUpper,
-	Int64DisplayTypeHexLower,
-	Int64DisplayTypeBinary,
-	Int64DisplayTypeCommas,
-} Int64DisplayType;
+	Int128DisplayTypeDecimal,
+	Int128DisplayTypeHexUpper,
+	Int128DisplayTypeHexLower,
+	Int128DisplayTypeBinary,
+	Int128DisplayTypeCommas,
+} Int128DisplayType;
 
 u64 strlen(const char *msg);
 i32 strncmp(const char *x, const char *y, u64 n);
@@ -28,9 +28,11 @@ void *memmove(void *dst, const void *src, u64 n);
 i32 memcmp(const void *s1, const void *s2, u64 n);
 u8 f64_to_string(char buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
 		 bool commas);
-i32 string_to_u64(const char *buf, u64 len, u64 *result);
-u8 i64_to_string(char buf[MAX_I64_STRING_LEN], i64 value, Int64DisplayType t);
-u8 u64_to_string(char buf[MAX_U64_STRING_LEN], u64 value, Int64DisplayType t);
+i32 string_to_u128(const char *buf, u64 len, u128 *result);
+u8 i128_to_string(char buf[MAX_I128_STRING_LEN], i128 value,
+		  Int128DisplayType t);
+u8 u128_to_string(char buf[MAX_U128_STRING_LEN], u128 value,
+		  Int128DisplayType t);
 
 __attribute__((unused, noinline)) static void secure_zero(void *ptr, u64 len) {
 	volatile u8 *p = (volatile u8 *)ptr;
@@ -212,7 +214,7 @@ PUBLIC u8 f64_to_string(char buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
 	return pos;
 }
 
-PUBLIC i32 string_to_u64(const char *buf, u64 len, u64 *result) {
+PUBLIC i32 string_to_u128(const char *buf, u64 len, u128 *result) {
 	u64 i = 0;
 	u8 c;
 
@@ -223,39 +225,39 @@ PUBLIC i32 string_to_u64(const char *buf, u64 len, u64 *result) {
 	while (i < len) {
 		c = buf[i];
 		if (c < '0' || c > '9') return -EINVAL;
-		if (*result > U64_MAX / 10) return -EOVERFLOW;
+		if (*result > U128_MAX / 10) return -EOVERFLOW;
 		*result = *result * 10 + (c - '0');
 		i++;
 	}
 	return 0;
 }
 
-PUBLIC u8 i64_to_string(char buf[MAX_I64_STRING_LEN], i64 value,
-			Int64DisplayType t) {
+PUBLIC u8 i128_to_string(char buf[MAX_I128_STRING_LEN], i128 value,
+			 Int128DisplayType t) {
 	u8 len;
-	u64 abs_v;
+	u128 abs_v;
 	bool is_negative = value < 0;
 	if (is_negative) {
 		*buf++ = '-';
-		abs_v = value == I64_MIN ? (u64)1 << 63 : (u64)(-value);
+		abs_v = value == I128_MIN ? (u128)1 << 127 : (u128)(-value);
 	} else
-		abs_v = (u64)value;
-	len = u64_to_string(buf, abs_v, t);
+		abs_v = (u128)value;
+	len = u128_to_string(buf, abs_v, t);
 	return is_negative ? len + 1 : len;
 }
 
-PUBLIC u8 u64_to_string(char buf[MAX_U64_STRING_LEN], u64 value,
-			Int64DisplayType t) {
-	u8 temp[MAX_U64_STRING_LEN];
+PUBLIC u8 u128_to_string(char buf[MAX_U128_STRING_LEN], u128 value,
+			 Int128DisplayType t) {
+	char temp[MAX_U128_STRING_LEN];
 	i32 i = 0, j = 0;
 	bool hex =
-	    t == Int64DisplayTypeHexUpper || t == Int64DisplayTypeHexLower;
-	bool commas = t == Int64DisplayTypeCommas;
+	    t == Int128DisplayTypeHexUpper || t == Int128DisplayTypeHexLower;
+	bool commas = t == Int128DisplayTypeCommas;
 	u8 mod_val =
-	    hex ? 16 : (commas || t == Int64DisplayTypeDecimal ? 10 : 2);
-	const char *hex_code = t == Int64DisplayTypeHexUpper
-				   ? "0123456789ABCDEF"
-				   : "0123456789abcdef";
+	    hex ? 16 : (commas || t == Int128DisplayTypeDecimal ? 10 : 2);
+	const u8 *hex_code = t == Int128DisplayTypeHexUpper
+				 ? "0123456789ABCDEF"
+				 : "0123456789abcdef";
 	if (hex) {
 		j = 2;
 		buf[0] = '0';
@@ -328,12 +330,12 @@ Test(strlen) {
 }
 
 Test(to_string) {
-	char buf[MAX_I64_STRING_LEN];
-	i64 x = -123;
-	u8 res = i64_to_string(buf, x, Int64DisplayTypeHexLower);
+	char buf[MAX_I128_STRING_LEN];
+	i128 x = -123;
+	u8 res = i128_to_string(buf, x, Int128DisplayTypeHexLower);
 	ASSERT(res == 5);
 	ASSERT(!strcmp(buf, "-0x7b"));
-	res = i64_to_string(buf, 1234, Int64DisplayTypeDecimal);
+	res = i128_to_string(buf, 1234, Int128DisplayTypeDecimal);
 	ASSERT(res == 4);
 	ASSERT(!strcmp(buf, "1234"));
 }

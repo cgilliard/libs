@@ -49,8 +49,7 @@ STATIC_ASSERT(sizeof(u128) == 16, u128_sizes_match);
 STATIC_ASSERT(sizeof(i128) == 16, i128_sizes_match);
 STATIC_ASSERT(sizeof(f64) == 8, f64_sizes_match);
 STATIC_ASSERT(sizeof(void *) == 8, os_64_bit);
-STATIC_ASSERT(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, little_endian);
-STATIC_ASSERT(__BYTE_ORDER__ != __ORDER_BIG_ENDIAN__, big_endian);
+STATIC_ASSERT(__BYTE_ORDER__ == 1234, little_endian);
 
 #endif /* TYPES_IMPL_GUARD */
 #endif /* TYPES_IMPL */
