@@ -137,4 +137,7 @@
 #define EWOULDBLOCK EAGAIN /* Operation would block */
 #define EDEADLOCK EDEADLK  /* Resource deadlock avoided */
 
+/* Non-standard additional codes */
+#define EDUPLICATE 1001 /* Duplicate Entry */
+
 #endif /* _ERRNO_H */

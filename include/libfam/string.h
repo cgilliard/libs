@@ -3,7 +3,7 @@
 
 #include <libfam/types.h>
 
-#define MAX_U64_STRING_LEN 255
+#define MAX_U64_STRING_LEN 25
 #define MAX_I64_STRING_LEN (MAX_U64_STRING_LEN + 1)
 #define MAX_F64_STRING_LEN 64
 
@@ -26,11 +26,11 @@ void *memset(void *ptr, i32 x, u64 n);
 void *memcpy(void *dst, const void *src, u64 n);
 void *memmove(void *dst, const void *src, u64 n);
 i32 memcmp(const void *s1, const void *s2, u64 n);
-u8 f64_to_string(u8 buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
+u8 f64_to_string(char buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
 		 bool commas);
-i32 string_to_u64(const u8 *buf, u64 len, u64 *result);
-u8 i64_to_string(u8 buf[MAX_I64_STRING_LEN], i64 value, Int64DisplayType t);
-u8 u64_to_string(u8 buf[MAX_U64_STRING_LEN], u64 value, Int64DisplayType t);
+i32 string_to_u64(const char *buf, u64 len, u64 *result);
+u8 i64_to_string(char buf[MAX_I64_STRING_LEN], i64 value, Int64DisplayType t);
+u8 u64_to_string(char buf[MAX_U64_STRING_LEN], u64 value, Int64DisplayType t);
 
 __attribute__((unused, noinline)) static void secure_zero(void *ptr, u64 len) {
 	volatile u8 *p = (volatile u8 *)ptr;
@@ -116,7 +116,7 @@ PUBLIC void *memmove(void *dest, const void *src, u64 n) {
 	return dest;
 }
 
-PUBLIC u8 f64_to_string(u8 buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
+PUBLIC u8 f64_to_string(char buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
 			bool commas) {
 	u64 pos = 0;
 	i32 is_negative;
@@ -212,7 +212,7 @@ PUBLIC u8 f64_to_string(u8 buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
 	return pos;
 }
 
-PUBLIC i32 string_to_u64(const u8 *buf, u64 len, u64 *result) {
+PUBLIC i32 string_to_u64(const char *buf, u64 len, u64 *result) {
 	u64 i = 0;
 	u8 c;
 
@@ -230,6 +230,92 @@ PUBLIC i32 string_to_u64(const u8 *buf, u64 len, u64 *result) {
 	return 0;
 }
 
+PUBLIC u8 i64_to_string(char buf[MAX_I64_STRING_LEN], i64 value,
+			Int64DisplayType t) {
+	u8 len;
+	u64 abs_v;
+	bool is_negative = value < 0;
+	if (is_negative) {
+		*buf++ = '-';
+		abs_v = value == I64_MIN ? (u64)1 << 63 : (u64)(-value);
+	} else
+		abs_v = (u64)value;
+	len = u64_to_string(buf, abs_v, t);
+	return is_negative ? len + 1 : len;
+}
+
+PUBLIC u8 u64_to_string(char buf[MAX_U64_STRING_LEN], u64 value,
+			Int64DisplayType t) {
+	u8 temp[MAX_U64_STRING_LEN];
+	i32 i = 0, j = 0;
+	bool hex =
+	    t == Int64DisplayTypeHexUpper || t == Int64DisplayTypeHexLower;
+	bool commas = t == Int64DisplayTypeCommas;
+	u8 mod_val =
+	    hex ? 16 : (commas || t == Int64DisplayTypeDecimal ? 10 : 2);
+	const char *hex_code = t == Int64DisplayTypeHexUpper
+				   ? "0123456789ABCDEF"
+				   : "0123456789abcdef";
+	if (hex) {
+		j = 2;
+		buf[0] = '0';
+		buf[1] = 'x';
+	}
+	if (value == 0) {
+		buf[j++] = '0';
+		buf[j] = '\0';
+		return j;
+	}
+	while (value > 0) {
+		temp[i++] = hex_code[(value % mod_val)];
+		if (mod_val == 16)
+			value >>= 4;
+		else if (mod_val == 10)
+			value /= 10;
+		else if (mod_val == 2)
+			value >>= 1;
+	}
+	if (commas) {
+		u64 digit_count = i;
+		u64 comma_count = digit_count > 3 ? (digit_count - 1) / 3 : 0;
+		u64 total_bytes = digit_count + comma_count;
+		j = 0;
+		i--;
+		u64 digits_until_comma = digit_count % 3 ? digit_count % 3 : 3;
+		while (i >= 0) {
+			buf[j++] = temp[i--];
+			digits_until_comma--;
+			if (digits_until_comma == 0 && i >= 0) {
+				buf[j++] = ',';
+				digits_until_comma = 3;
+			}
+		}
+		buf[j] = '\0';
+		return total_bytes;
+	} else {
+		for (; i > 0; j++) {
+			buf[j] = temp[--i];
+		}
+		buf[j] = '\0';
+		return j;
+	}
+}
+
+PUBLIC void secure_zero32(u8 buf[32]) {
+#ifdef __AVX2__
+	__asm__ __volatile__(
+	    "vpxor   %%ymm0, %%ymm0, %%ymm0     \n\t"
+	    "vmovdqa %%ymm0, %0                 \n\t"
+	    :
+	    : "m"(*(buf))
+	    : "ymm0", "memory");
+
+	__asm__ __volatile__("" ::: "memory");
+#else
+	secure_zero(buf, 32);
+#endif /* !__AVX2__ */
+}
+
 #ifdef TEST
 
 Test(strlen) {
@@ -237,6 +323,19 @@ Test(strlen) {
 	ASSERT(len == 3);
 	len = strlen("");
 	ASSERT(len == 0);
+	u64 x = 0;
+	ASSERT(!x);
+}
+
+Test(to_string) {
+	char buf[MAX_I64_STRING_LEN];
+	i64 x = -123;
+	u8 res = i64_to_string(buf, x, Int64DisplayTypeHexLower);
+	ASSERT(res == 5);
+	ASSERT(!strcmp(buf, "-0x7b"));
+	res = i64_to_string(buf, 1234, Int64DisplayTypeDecimal);
+	ASSERT(res == 4);
+	ASSERT(!strcmp(buf, "1234"));
 }
 
 #endif /* TEST */

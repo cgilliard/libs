@@ -33,6 +33,10 @@ __asm__(
 
 #include <libfam/test.h>
 
+#define ARENA_IMPL
+#define COLORS_IMPL
+#define RBTREE_IMPL
+#define ENV_IMPL
 #define SYSCALL_IMPL
 #define TYPES_IMPL
 #define SYSEXT_IMPL
@@ -40,7 +44,10 @@ __asm__(
 #define STUBS_IMPL
 #define SYNC_IMPL
 
+#include <libfam/arena.h>
 #include <libfam/atomic.h>
+#include <libfam/colors.h>
+#include <libfam/env.h>
 #include <libfam/string.h>
 #include <libfam/stubs.h>
 #include <libfam/sync.h>
@@ -65,9 +72,13 @@ const char *SPACER =(void*)
 
 int main(int argc, char **argv, char **envp) {
 	i32 count, i, test_count;
+	Arena *a;
 	test_count = 0;
 	count = __init_array_end - __init_array_start;
 	for (i = 0; i < count; i++) __init_array_start[i]();
+
+	arena_init(&a, 1024 * 1024 * 16, 8);
+	init_environ(envp, a);
 
 	pwrite(2, SPACER, __builtin_strlen(SPACER), -1);
 
