@@ -4,8 +4,10 @@ ALL=0;
 TEST=0;
 CLEAN=0;
 INSTALL=0;
+COVERAGE=0;
 CC="${CC:-clang}"
 CFLAGS="${CFLAGS:--O3 -fno-stack-clash-protection}"
+TEST_DIR=./test
 INCLUDE_DIR=include
 INCLUDE="-I${INCLUDE_DIR}";
 CSTRICT="-nostdlib \
@@ -30,6 +32,10 @@ for arg in "$@"; do
 	    TEST=1;
 	    LIB_DIR=./target/libtest
 	    ;;
+	cov)
+	    COVERAGE=1;
+	    LIB_DIR=./target/libcov
+	    ;;
 	clean)
 	    CLEAN=1;
 	    ;;
@@ -39,7 +45,7 @@ for arg in "$@"; do
     esac
 done
 
-if [ "${CLEAN}" = "0" ] && [ "${TEST}" = "0" ] && [ "${INSTALL}" = "0" ]; then
+if [ "${CLEAN}" = "0" ] && [ "${TEST}" = "0" ] && [ "${INSTALL}" = "0" ] && [ "${COVERAGE}" = "0" ]; then
 	ALL=1;
 	LIB_DIR=./target/lib
 fi
@@ -53,6 +59,11 @@ if [ "${ALL}" = "1" ]; then
 elif [ "${TEST}" = "1" ]; then
     mkdir -p ${LIB_DIR};
     mkdir -p ${BIN_DIR};
+elif [ "${COVERAGE}" = "1" ]; then
+    rm -f ${BIN_DIR}/cov
+    rm -f ${LIB_DIR}/*
+    mkdir -p ${BIN_DIR};
+    mkdir -p ${LIB_DIR};
 fi
 
 ARCH=$(uname -m 2>/dev/null || echo unknown)
@@ -97,14 +108,14 @@ if [ "${TEST}" = "1" ]; then
 	fi
     done
     MAIN_OBJECT="${LIB_DIR}/main.o";
-    if [ ! -e "${MAIN_OBJECT}" ] || [ "test/main.c" -nt "${MAIN_OBJECT}" ]; then
+    if [ ! -e "${MAIN_OBJECT}" ] || [ "${TEST_DIR}/main.c" -nt "${MAIN_OBJECT}" ]; then
         COMMAND="${CC} \
 	    ${INCLUDE} \
 	    ${ARCH_FLAGS} \
 	    ${CFLAGS} \
 	    ${CSTRICT} \
 	    -o ${MAIN_OBJECT} \
-	    test/main.c -c";
+	    ${TEST_DIR}/main.c -c";
         echo ${COMMAND};
         ${COMMAND} || exit 1;
 	NEED_LD=1;
@@ -122,6 +133,11 @@ if [ "${TEST}" = "1" ]; then
         ${COMMAND} || exit 1;
     fi
     LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests || exit 1;
+elif [ "${COVERAGE}" = "1" ]; then
+	gcc ${INCLUDE} -DTEST -DCOVERAGE ${TEST_DIR}/main.c -o ${BIN_DIR}/cov --coverage
+	${BIN_DIR}/cov
+	gcov ${BIN_DIR}/*.gcda > ${LIB_DIR}/summary.txt
+	mv *.gcov ${LIB_DIR}
 elif [ "${ALL}" = "1" ]; then
     NEED_LIBFAM=0;
     IMPLS="";
