@@ -74,7 +74,7 @@ case "$ARCH" in
         ARCH_FLAGS="-march=haswell -mavx2"
         ;;
     aarch64|arm64|armv8*)
-        ARCH_FLAGS="-march=armv8-a+crypto"
+        ARCH_FLAGS="-march=armv8-a+crypto -mno-outline-atomics"
         ;;
     *)
         ARCH_FLAGS="-march=native"
