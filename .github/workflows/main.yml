@@ -22,7 +22,7 @@ jobs:
       matrix:
         config:
           - platform: linux-amd64
-            runner: ubuntu-slim
+            runner: ubuntu-latest
           - platform: linux-aarch64
             runner: ubuntu-24.04-arm
         task:
@@ -38,8 +38,6 @@ jobs:
 
       - name: Check linux version
         run: uname -a
-      - name: Install clang
-        run: sudo apt update; sudo apt install clang -y
       - name: ${{ matrix.task }}
         run: ./.ci/${{ matrix.task }}
         env:
