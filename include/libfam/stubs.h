@@ -1,11 +1,11 @@
-#ifndef _STUBSX_H
-#define _STUBSX_H
+#ifndef _STUBS_H
+#define _STUBS_H
 
-#endif /* _STUBSX_H */
+#endif /* _STUBS_H */
 
-#ifdef STUBSX_IMPL
-#ifndef STUBSX_IMPL_GUARD
-#define STUBSX_IMPL_GUARD
+#ifdef STUBS_IMPL
+#ifndef STUBS_IMPL_GUARD
+#define STUBS_IMPL_GUARD
 
 #include <libfam/syscall.h>
 #include <libfam/sysext.h>
@@ -139,5 +139,5 @@ PUBLIC u128 __udivti3(u128 a, u128 b) { return __udivmodti4(a, b, 0); }
 Test(__umodti3) { ASSERT(1); }
 #endif
 
-#endif /* STUBSX_IMPL_GUARD */
-#endif /* STUBSX_IMPL */
+#endif /* STUBS_IMPL_GUARD */
+#endif /* STUBS_IMPL */

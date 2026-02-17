@@ -278,7 +278,7 @@ const char *format_to_string(Formatter *f);
 #include <libfam/errno.h>
 #include <libfam/limits.h>
 #include <libfam/string.h>
-#include <libfam/stubsx.h>
+#include <libfam/stubs.h>
 #include <libfam/syscall.h>
 #include <libfam/sysext.h>
 #include <libfam/utils.h>

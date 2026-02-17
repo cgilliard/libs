@@ -34,7 +34,7 @@ __asm__(
 #include <libfam/env.h>
 #include <libfam/format.h>
 #include <libfam/string.h>
-#include <libfam/stubsx.h>
+#include <libfam/stubs.h>
 #include <libfam/sync.h>
 #include <libfam/syscall.h>
 #include <libfam/sysext.h>
