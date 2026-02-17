@@ -1,4 +1,6 @@
 int main(int argc, char **argv, char **envp);
+
+#ifndef COVERAGE
 #ifdef __x86_64__
 __asm__(
     ".section .text\n"
@@ -27,19 +29,29 @@ __asm__(
     "    bic x4, x4, #15\n"
     "    mov sp, x4\n"
     "    bl main\n");
-#endif /* !__aarch64__ */
+#endif /* __aarch64__ */
+#endif /* !COVERAGE */
+
+#include <libfam/test.h>
+
+#ifdef COVERAGE
+#define FORMAT_IMPL
+#define ARENA_IMPL
+#define ENV_IMPL
+#define COLORS_IMPL
+#define STUBS_IMPL
+#define SYNC_IMPL
+#define TYPES_IMPL
+#define STRING_IMPL
+#define SYSCALL_IMPL
+#define SYSEXT_IMPL
+#define RBTREE_IMPL
+#include <libfam/colors.h>
+#endif
 
 #include <libfam/arena.h>
-#include <libfam/colors.h>
 #include <libfam/env.h>
 #include <libfam/format.h>
-#include <libfam/string.h>
-#include <libfam/stubs.h>
-#include <libfam/sync.h>
-#include <libfam/syscall.h>
-#include <libfam/sysext.h>
-#include <libfam/test.h>
-#include <libfam/types.h>
 
 i32 cur_tests = 0;
 i32 exe_test = 0;
@@ -102,7 +114,9 @@ int main(int argc, char **argv, char **envp) {
 			RESET, cur_tests, BOLD_BLUE, RESET, RED,
 			(f64)global_timer / 1000000.0, RESET);
 
+#ifndef COVERAGE
 	exit_group(0);
+#endif /* !COVERAGE */
 	(void)argc;
 	(void)argv;
 }
