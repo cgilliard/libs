@@ -201,48 +201,52 @@
 	})
 #endif
 
-#define println(fmt, ...)                                                    \
-	({                                                                   \
-		const char *_tmp__;                                          \
-		Formatter _f__ = {0};                                        \
-		if (FORMAT(&_f__, fmt, __VA_ARGS__) >= 0) {                  \
-			if (format_append(&_f__, "\n") >= 0) {               \
-				_tmp__ = format_to_string(&_f__);            \
-				if (_tmp__)                                  \
-					pwrite(2, _tmp__,                    \
-					       __builtin_strlen(_tmp__), 0); \
-			}                                                    \
-		}                                                            \
-		format_clear(&_f__);                                         \
+#define write_all(fd, s, len)                                           \
+	({                                                              \
+		u64 wlen = 0, to_write = len;                           \
+		while (wlen < to_write) {                               \
+			i64 result = pwrite(1, s + wlen, to_write, -1); \
+			if (result < 0) break;                          \
+			wlen += result;                                 \
+			to_write -= result;                             \
+		}                                                       \
 	})
-
-#define print(fmt, ...)                                                     \
+#define println(fmt, ...)                                                   \
 	({                                                                  \
 		const char *_tmp__;                                         \
 		Formatter _f__ = {0};                                       \
 		if (FORMAT(&_f__, fmt, __VA_ARGS__) >= 0) {                 \
-			_tmp__ = format_to_string(&_f__);                   \
-			if (_tmp__)                                         \
-				pwrite(2, _tmp__, __builtin_strlen(_tmp__), \
-				       0);                                  \
+			if (format_append(&_f__, "\n") >= 0) {              \
+				_tmp__ = format_to_string(&_f__);           \
+				if (_tmp__) write_all(1, _tmp__, _f__.pos); \
+			}                                                   \
 		}                                                           \
 		format_clear(&_f__);                                        \
 	})
 
-#define panic(fmt, ...)                                                      \
-	({                                                                   \
-		const char *_tmp__;                                          \
-		Formatter _f__ = {0};                                        \
-		if (FORMAT(&_f__, fmt, __VA_ARGS__) >= 0) {                  \
-			if (format_append(&_f__, "\n") >= 0) {               \
-				_tmp__ = format_to_string(&_f__);            \
-				if (_tmp__)                                  \
-					pwrite(2, _tmp__,                    \
-					       __builtin_strlen(_tmp__), 0); \
-			}                                                    \
-		}                                                            \
-		format_clear(&_f__);                                         \
-		exit_group(-1);                                              \
+#define print(fmt, ...)                                             \
+	({                                                          \
+		const char *_tmp__;                                 \
+		Formatter _f__ = {0};                               \
+		if (FORMAT(&_f__, fmt, __VA_ARGS__) >= 0) {         \
+			_tmp__ = format_to_string(&_f__);           \
+			if (_tmp__) write_all(1, _tmp__, _f__.pos); \
+		}                                                   \
+		format_clear(&_f__);                                \
+	})
+
+#define panic(fmt, ...)                                                     \
+	({                                                                  \
+		const char *_tmp__;                                         \
+		Formatter _f__ = {0};                                       \
+		if (FORMAT(&_f__, fmt, __VA_ARGS__) >= 0) {                 \
+			if (format_append(&_f__, "\n") >= 0) {              \
+				_tmp__ = format_to_string(&_f__);           \
+				if (_tmp__) write_all(2, _tmp__, _f__.pos); \
+			}                                                   \
+		}                                                           \
+		format_clear(&_f__);                                        \
+		exit_group(-1);                                             \
 	})
 
 typedef struct {
