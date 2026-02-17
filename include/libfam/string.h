@@ -511,6 +511,20 @@ Test(string_u128) {
 	ASSERT(!strcmp(buf, "9,993"), "comma verify");
 }
 
+Test(memset) {
+	i32 i;
+	u8 x[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+	memset(x, 0, sizeof(x));
+	for (i = 0; i < 10; i++) ASSERT_EQ(x[i], 0, "memset[{}]", x[i]);
+}
+
+Test(strstr) {
+	const char *s = "abcdefghi";
+	ASSERT_EQ(strstr(s, "def"), s + 3, "strstr1");
+	ASSERT_EQ(strstr(s, "x"), NULL, "no match");
+	ASSERT_EQ(strstr(s, "abcdefghixyz"), NULL, "no match 2");
+}
+
 #endif /* TEST */
 /* GCOVR_EXCL_STOP */
 

@@ -158,6 +158,7 @@ elif [ "${COVERAGE}" = "1" ]; then
 	COMMAND="gcc \
 		-O0 \
 		-g \
+		-fno-builtin \
 		${INCLUDE} \
 		-DTEST \
 		-DCOVERAGE \
