@@ -1,6 +1,8 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
+#include <libfam/types.h>
+
 #define PUBLIC __attribute__((visibility("default")))
 
 #define STATIC_ASSERT(condition, message) \

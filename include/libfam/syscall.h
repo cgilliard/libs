@@ -79,7 +79,8 @@ i32 close(i32 fd);
 
 #include <libfam/utils.h>
 
-static i64 syscall(i64 sysno, i64 a0, i64 a1, i64 a2, i64 a3, i64 a4, i64 a5) {
+static inline i64 syscall(i64 sysno, i64 a0, i64 a1, i64 a2, i64 a3, i64 a4,
+			  i64 a5) {
 	i64 result = 0;
 #ifdef __aarch64__
 	__asm__ volatile(

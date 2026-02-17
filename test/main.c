@@ -46,6 +46,7 @@ __asm__(
 #define SYSCALL_IMPL
 #define SYSEXT_IMPL
 #define RBTREE_IMPL
+#define ERRNO_IMPL
 #include <libfam/colors.h>
 #endif
 
