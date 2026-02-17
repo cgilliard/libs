@@ -66,6 +66,7 @@ PUBLIC void arena_destroy(Arena *a) {
 	}
 }
 
+/* GCOVR_EXCL_START */
 #ifdef TEST
 #include <libfam/test.h>
 
@@ -101,6 +102,7 @@ Test(alloc) {
 	arena_destroy(a);
 }
 #endif /* TEST */
+/* GCOVR_EXCL_STOP */
 
 #endif /* ARENA_IMPL_GUARD */
 #endif /* ARENA_IMPL */

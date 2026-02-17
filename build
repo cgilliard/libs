@@ -147,6 +147,8 @@ if [ "${TEST}" = "1" ]; then
     fi
 elif [ "${COVERAGE}" = "1" ]; then
 	COMMAND="gcc \
+		-O0 \
+		-g \
 		${INCLUDE} \
 		-DTEST \
 		-DCOVERAGE \
@@ -156,8 +158,8 @@ elif [ "${COVERAGE}" = "1" ]; then
 	echo ${COMMAND};
 	${COMMAND} || exit 1;
 	${BIN_DIR}/cov || exit 1;
-	gcov --branch-probabilities ${BIN_DIR}/*.gcda > ${LIB_DIR}/summary.txt || exit 1;
-	mv *.gcov ${LIB_DIR} || exit 1;
+	gcovr target/bin/cov-main.gcno
+	gcovr target/bin/cov-main.gcno --txt-metric branch
 elif [ "${ALL}" = "1" ]; then
     NEED_LIBFAM=0;
     IMPLS="";
@@ -199,7 +201,7 @@ EOM
         ${COMMAND} || exit 1;
     fi
 elif [ "${INSTALL}" = "1" ]; then
-	mkdir -p /usr/lib/libfam/
-	cp -rp ${LIB_DIR}/*.so /usr/lib/libfam
+	rm -rf /usr/include/libfam
+	cp -rp $INCLUDE_DIR/libfam /usr/include
 fi
 

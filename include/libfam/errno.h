@@ -1,6 +1,8 @@
 #ifndef _ERRNO_H
 #define _ERRNO_H
 
+#include <libfam/types.h>
+
 #define SUCCESS 0	/* Success */
 #define EPERM 1		/* Operation not permitted */
 #define ENOENT 2	/* No such file or directory */
@@ -140,6 +142,8 @@
 /* Non-standard additional codes */
 #define EDUPLICATE 1001 /* Duplicate Entry */
 #define ETODO 1002	/* TODO */
+
+char *strerror(i32 err_code);
 
 #endif /* _ERRNO_H */
 
