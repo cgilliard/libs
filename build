@@ -135,7 +135,15 @@ if [ "${TEST}" = "1" ]; then
     fi
     LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests || exit 1;
 elif [ "${COVERAGE}" = "1" ]; then
-	gcc ${INCLUDE} -DTEST -DCOVERAGE ${TEST_DIR}/main.c -o ${BIN_DIR}/cov --coverage || exit 1;
+	COMMAND="gcc \
+		${INCLUDE} \
+		-DTEST \
+		-DCOVERAGE \
+		${TEST_DIR}/main.c \
+		-o ${BIN_DIR}/cov \
+		--coverage";
+	echo ${COMMAND};
+	${COMMAND} || exit 1;
 	${BIN_DIR}/cov || exit 1;
 	gcov --branch-probabilities ${BIN_DIR}/*.gcda > ${LIB_DIR}/summary.txt || exit 1;
 	mv *.gcov ${LIB_DIR} || exit 1;

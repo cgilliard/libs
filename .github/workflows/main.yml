@@ -34,6 +34,7 @@ jobs:
           - testclang
           - testgcc0
           - testclang0
+          - cov
     steps:
       - name: Checkout code
         uses: actions/checkout@v4  # Updated to latest version

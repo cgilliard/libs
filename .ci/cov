@@ -1,0 +1,4 @@
+#!/bin/sh
+
+./build cov || exit 1
+
