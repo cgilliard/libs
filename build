@@ -72,62 +72,76 @@ esac
 
 if [ "${TEST}" = "1" ]; then
     LIBS="";
-    for src in "$INCLUDE_DIR"/libfam/*.h; do
-        base=$(basename "$src" .h)
-	LIBS="${LIBS} -l${base}"
-        impl=$(echo "$base" | tr 'a-z' 'A-Z')_IMPL
-        COMMAND="${CC} \
-            ${INCLUDE} \
-            ${ARCH_FLAGS} \
-            ${CFLAGS} \
-            ${CSTRICT} \
-            -DTEST \
-            -shared \
-            -fPIC \
-            -D${impl} \
-            -x c  \
-            ${src} \
-            -o ${LIB_DIR}/lib${base}.so"
-        echo ${COMMAND};
-        ${COMMAND} || exit 1;
+    NEED_LD=0;
+    for SRC in "$INCLUDE_DIR"/libfam/*.h; do
+        BASE=$(basename "${SRC}" .h)
+	LIBS="${LIBS} -l${BASE}"
+        IMPL=$(echo "$BASE" | tr 'a-z' 'A-Z')_IMPL
+	SO_FILE="${LIB_DIR}/lib${BASE}.so"
+	if [ ! -e "${SO_FILE}" ] || [ "${SRC}" -nt "${SO_FILE}" ]; then
+            COMMAND="${CC} \
+                ${INCLUDE} \
+                ${ARCH_FLAGS} \
+                ${CFLAGS} \
+                ${CSTRICT} \
+                -DTEST \
+                -shared \
+                -fPIC \
+                -D${IMPL} \
+                -x c  \
+                ${SRC} \
+               -o ${SO_FILE}";
+            echo ${COMMAND};
+            ${COMMAND} || exit 1;
+	    NEED_LD=1;
+	fi
     done
-    COMMAND="${CC} \
-	${INCLUDE} \
-	${ARCH_FLAGS} \
-	${CFLAGS} \
-	${CSTRICT} \
-	-o ${LIB_DIR}/main.o \
-	test/main.c -c";
-    echo ${LIBS};
-    echo ${COMMAND};
-    ${COMMAND} || exit 1;
-    LDSO_PATH=`ldd /bin/ls | grep 'ld-linux' | awk '{print $1}'`;
-    COMMAND="ld \
-	-o ${BIN_DIR}/runtests \
-	${LIB_DIR}/main.o \
-	-L${LIB_DIR} \
-	${LIBS} \
-	-dynamic-linker ${LDSO_PATH}";
-    echo ${COMMAND};
-    ${COMMAND} || exit 1;
-    LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests || exit 1;
-elif [ "${ALL}" = "1" ]; then
-    for src in "$INCLUDE_DIR"/libfam/*.h; do
-	base=$(basename "$src" .h)
-        impl=$(echo "$base" | tr 'a-z' 'A-Z')_IMPL
+    MAIN_OBJECT="${LIB_DIR}/main.o";
+    if [ ! -e "${MAIN_OBJECT}" ] || [ "test/main.c" -nt "${MAIN_OBJECT}" ]; then
         COMMAND="${CC} \
 	    ${INCLUDE} \
-            ${ARCH_FLAGS} \
-            ${CFLAGS} \
-            ${CSTRICT} \
-            -shared \
-            -fPIC \
-            -D${impl} \
-            -x c  \
-            ${src} \
-            -o ${LIB_DIR}/lib${base}.so"
+	    ${ARCH_FLAGS} \
+	    ${CFLAGS} \
+	    ${CSTRICT} \
+	    -o ${MAIN_OBJECT} \
+	    test/main.c -c";
         echo ${COMMAND};
         ${COMMAND} || exit 1;
+	NEED_LD=1;
+    fi
+    BINARY="${BIN_DIR}/runtests";
+    if [ ! -e "${BINARY}" ] || [ "${NEED_LD}" = "1" ]; then
+        LDSO_PATH=`ldd /bin/ls | grep 'ld-linux' | awk '{print $1}'`;
+        COMMAND="ld \
+	    -o ${BINARY} \
+	    ${LIB_DIR}/main.o \
+	    -L${LIB_DIR} \
+	    ${LIBS} \
+	    -dynamic-linker ${LDSO_PATH}";
+        echo ${COMMAND};
+        ${COMMAND} || exit 1;
+    fi
+    LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests || exit 1;
+elif [ "${ALL}" = "1" ]; then
+    for SRC in "$INCLUDE_DIR"/libfam/*.h; do
+	BASE=$(basename "${SRC}" .h)
+        IMPL=$(echo "$BASE" | tr 'a-z' 'A-Z')_IMPL
+	SO_FILE="${LIB_DIR}/lib${BASE}.so"
+        if [ ! -e "${SO_FILE}" ] || [ "${SRC}" -nt "${SO_FILE}" ]; then
+            COMMAND="${CC} \
+	        ${INCLUDE} \
+                ${ARCH_FLAGS} \
+                ${CFLAGS} \
+                ${CSTRICT} \
+                -shared \
+                -fPIC \
+                -D${IMPL} \
+                -x c  \
+                ${SRC} \
+                -o ${LIB_DIR}/lib${BASE}.so"
+            echo ${COMMAND};
+            ${COMMAND} || exit 1;
+	fi
     done
 elif [ "${INSTALL}" = "1" ]; then
 	mkdir -p /usr/lib/libfam/
