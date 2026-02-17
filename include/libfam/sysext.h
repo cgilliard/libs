@@ -362,13 +362,13 @@ Test(open) {
 	i32 res = io_uring_register(fd, IORING_REGISTER_FILES, NULL, 0);
 	ASSERT(res < 0, "not a ring fd");
 
-	struct statx st;
+	struct statx st = {0};
 	ASSERT(!statx("/tmp/open_test1.dat", &st), "statx");
 	ASSERT_EQ(st.stx_size, 0, "size=0");
 	ASSERT(!fallocate(fd, 100), "fallocate");
 	ASSERT(!fstatx(fd, &st), "fstatx");
 	ASSERT_EQ(st.stx_size, 100, "size=100");
-	u8 buf[100], verify[100] = {0}, *verify2;
+	u8 buf[100] = {0}, verify[100] = {0}, *verify2;
 	i32 i;
 	for (i = 0; i < 100; i++) buf[i] = 3;
 	pwrite(fd, buf, 100, 0);
@@ -459,8 +459,8 @@ Test(fork_wait) {
 
 Test(write_num) {
 #define PATH "/tmp/write_num.dat"
-	u8 buf[1024];
-	u8 expected[] = "-92233720368547758080-123123";
+	char buf[1024] = {0};
+	char expected[] = "-92233720368547758080-123123";
 	i32 fd = open(PATH, O_RDWR | O_CREAT, 0600);
 	write_num(fd, (i64)(-0x7FFFFFFFFFFFFFFF - 1));
 	write_num(fd, 0);
