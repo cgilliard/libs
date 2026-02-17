@@ -61,6 +61,7 @@ elif [ "${TEST}" = "1" ]; then
     mkdir -p ${BIN_DIR};
 elif [ "${COVERAGE}" = "1" ]; then
     rm -f ${BIN_DIR}/cov
+    rm -f ${BIN_DIR}/*.gcda
     rm -f ${LIB_DIR}/*
     mkdir -p ${BIN_DIR};
     mkdir -p ${LIB_DIR};
@@ -134,10 +135,10 @@ if [ "${TEST}" = "1" ]; then
     fi
     LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests || exit 1;
 elif [ "${COVERAGE}" = "1" ]; then
-	gcc ${INCLUDE} -DTEST -DCOVERAGE ${TEST_DIR}/main.c -o ${BIN_DIR}/cov --coverage
-	${BIN_DIR}/cov
-	gcov ${BIN_DIR}/*.gcda > ${LIB_DIR}/summary.txt
-	mv *.gcov ${LIB_DIR}
+	gcc ${INCLUDE} -DTEST -DCOVERAGE ${TEST_DIR}/main.c -o ${BIN_DIR}/cov --coverage || exit 1;
+	${BIN_DIR}/cov || exit 1;
+	gcov --branch-probabilities ${BIN_DIR}/*.gcda > ${LIB_DIR}/summary.txt || exit 1;
+	mv *.gcov ${LIB_DIR} || exit 1;
 elif [ "${ALL}" = "1" ]; then
     NEED_LIBFAM=0;
     IMPLS="";

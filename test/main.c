@@ -116,7 +116,7 @@ int main(int argc, char **argv, char **envp) {
 
 #ifndef COVERAGE
 	exit_group(0);
-#endif /* !COVERAGE */
+#endif /* COVERAGE */
 	(void)argc;
 	(void)argv;
 }
