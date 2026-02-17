@@ -123,9 +123,14 @@ if [ "${TEST}" = "1" ]; then
     fi
     LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests || exit 1;
 elif [ "${ALL}" = "1" ]; then
+    NEED_LIBFAM=0;
+    IMPLS="";
+    NL='
+    ';
     for SRC in "$INCLUDE_DIR"/libfam/*.h; do
 	BASE=$(basename "${SRC}" .h)
         IMPL=$(echo "$BASE" | tr 'a-z' 'A-Z')_IMPL
+	IMPLS="${IMPLS}${NL}#define ${IMPL}${NL}#include <libfam/${BASE}.h>";
 	SO_FILE="${LIB_DIR}/lib${BASE}.so"
         if [ ! -e "${SO_FILE}" ] || [ "${SRC}" -nt "${SO_FILE}" ]; then
             COMMAND="${CC} \
@@ -141,8 +146,22 @@ elif [ "${ALL}" = "1" ]; then
                 -o ${LIB_DIR}/lib${BASE}.so"
             echo ${COMMAND};
             ${COMMAND} || exit 1;
+	    NEED_LIBFAM=1;
 	fi
     done
+    cat > /tmp/fam.h <<EOM
+${IMPLS}
+EOM
+    if [ "${NEED_LIBFAM}" = "1" ]; then
+        COMMAND="${CC} ${INCLUDE} \
+                ${ARCH_FLAGS} \
+                ${CFLAGS} \
+                ${CSTRICT} \
+                -shared \
+                -fPIC -x c /tmp/fam.h -o ${LIB_DIR}/libfam.so"
+        echo ${COMMAND};
+        ${COMMAND} || exit 1;
+    fi
 elif [ "${INSTALL}" = "1" ]; then
 	mkdir -p /usr/lib/libfam/
 	cp -rp ${LIB_DIR}/*.so /usr/lib/libfam

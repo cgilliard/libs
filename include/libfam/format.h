@@ -193,15 +193,16 @@
 	})
 #endif
 
-#define write_all(fd, s, len)                                           \
-	({                                                              \
-		u64 wlen = 0, to_write = len;                           \
-		while (wlen < to_write) {                               \
-			i64 result = pwrite(1, s + wlen, to_write, -1); \
-			if (result < 0) break;                          \
-			wlen += result;                                 \
-			to_write -= result;                             \
-		}                                                       \
+#define write_all(fd, s, len)                                        \
+	({                                                           \
+		u64 _wlen__ = 0, _to_write__ = len;                  \
+		while (_wlen__ < _to_write__) {                      \
+			i64 _result__ =                              \
+			    pwrite(1, s + _wlen__, _to_write__, -1); \
+			if (_result__ < 0) break;                    \
+			_wlen__ += _result__;                        \
+			_to_write__ -= _result__;                    \
+		}                                                    \
 	})
 #define println(fmt, ...)                                                   \
 	({                                                                  \
@@ -619,7 +620,8 @@ Test(format1) {
 	ASSERT(!strcmp(format_to_string(&f), "ok1 10.333"));
 }
 
-Test(format2) {}
+Test(format2) { ASSERT(4, "expected {}", 4); }
+
 #endif /* TEST */
 
 #endif /* FORMAT_IMPL */

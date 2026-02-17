@@ -1,6 +1,8 @@
 #ifndef _TEST_H
 #define _TEST_H
 
+#include <libfam/colors.h>
+#include <libfam/format.h>
 #include <libfam/syscall.h>
 #include <libfam/sysext.h>
 #include <libfam/types.h>
@@ -12,14 +14,8 @@
 void add_test_fn(void (*test_fn)(void), const char *name);
 void add_bench_fn(void (*bench_fn)(void), const char *name);
 static __attribute__((unused)) const char *__assertion_msg =
-    "\nassertion failed in test";
-
-extern i32 exe_test;
-typedef struct {
-	void (*test_fn)(void);
-	char name[MAX_TEST_NAME + 1];
-} TestEntry;
-extern TestEntry *active;
+    "\nAssertion failed in test";
+const char *get_active(void);
 
 #define Test(name)                                                  \
 	void __test_##name(void);                                   \
@@ -29,12 +25,25 @@ extern TestEntry *active;
 	}                                                           \
 	void __test_##name(void)
 
-#define ASSERT(x, ...)                               \
-	({                                           \
-		if (!(x)) {                          \
-			pwrite(2, "fail!\n", 6, -1); \
-			exit_group(-1);              \
-		}                                    \
+#define ASSERT_EQ(x, y, ...)                                                 \
+	({                                                                   \
+		if ((x) != (y)) {                                            \
+			Formatter fmt = FORMATTER_INIT;                      \
+			__VA_OPT__(FORMAT(&fmt, __VA_ARGS__);)               \
+			panic("{}{}{}: [{}]. '{}'", BRIGHT_RED,              \
+			      __assertion_msg, RESET, active[exe_test].name, \
+			      format_to_string(&fmt));                       \
+		}                                                            \
+	})
+
+#define ASSERT(x, ...)                                                         \
+	({                                                                     \
+		if (!(x)) {                                                    \
+			Formatter fmt = FORMATTER_INIT;                        \
+			__VA_OPT__(FORMAT(&fmt, __VA_ARGS__);)                 \
+			panic("{}{}{}: [{}]. '{}'", BOLD_RED, __assertion_msg, \
+			      RESET, get_active(), format_to_string(&fmt));    \
+		}                                                              \
 	})
 
 #endif /* _TEST_H */

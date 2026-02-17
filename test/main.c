@@ -44,9 +44,15 @@ __asm__(
 i32 cur_tests = 0;
 i32 exe_test = 0;
 
+typedef struct {
+	void (*test_fn)(void);
+	char name[MAX_TEST_NAME + 1];
+} TestEntry;
+
 TestEntry tests[MAX_TESTS];
 TestEntry benches[MAX_TESTS];
-TestEntry *active;
+
+PUBLIC const char *get_active(void) { return tests[exe_test].name; }
 
 const char *SPACER =(void*)
     "------------------------------------------------------------------"
@@ -67,7 +73,7 @@ int main(int argc, char **argv, char **envp) {
 	global_timer = micros();
 	for (exe_test = 0; exe_test < cur_tests; exe_test++) {
 		i64 timer = 0;
-		print("{}Running test{} {} [{}{}{}]", YELLOW, RESET,
+		print("{}Running test{} {} ({}{}{})", YELLOW, RESET,
 		      ++test_count, DIMMED, tests[exe_test].name, RESET);
 		timer = micros();
 		tests[exe_test].test_fn();
