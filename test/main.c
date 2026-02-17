@@ -34,6 +34,7 @@ __asm__(
 #include <libfam/test.h>
 
 #define ARENA_IMPL
+#define FORMAT_IMPL
 #define COLORS_IMPL
 #define RBTREE_IMPL
 #define ENV_IMPL
@@ -48,6 +49,7 @@ __asm__(
 #include <libfam/atomic.h>
 #include <libfam/colors.h>
 #include <libfam/env.h>
+#include <libfam/format.h>
 #include <libfam/string.h>
 #include <libfam/stubs.h>
 #include <libfam/sync.h>

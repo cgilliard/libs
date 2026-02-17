@@ -34,18 +34,18 @@
  *
  *
  * test.c
-```
-#define SYSCALL_IMPL
-#include <libfam/syscall.h>
-
-void _start(void) { exit_group(3); }
-```
-
-```
-# gcc -nostdlib -Iinclude test.c -o test
-```
+ * ```
+ * #define SYSCALL_IMPL
+ * #include <libfam/syscall.h>
  *
-*****************************************************************************/
+ * void _start(void) { exit_group(3); }
+ * ```
+ *
+ * ```
+ * # gcc -nostdlib -Iinclude test.c -o test
+ * ```
+ *
+ ****************************************************************************/
 
 /*****************************************************************************
  * Public Interface

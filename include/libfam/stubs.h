@@ -8,6 +8,7 @@
 #define STUBS_IMPL_GUARD
 
 #include <libfam/types.h>
+#include <libfam/utils.h>
 
 u128 __udivti3(u128 a, u128 b);
 u128 __umodti3(u128 a, u128 b);
