@@ -1,6 +1,6 @@
 #!/bin/sh
 
-export CC=clang; ./build clean all
+export CC=clang; ./build clean all || exit 1;
 
 ldd target/lib/libfam.so  | grep "statically linked" || { echo "not statically linked!"; exit 1; }
 UNDEFINED_COUNT=$(nm target/lib/libfam.so | grep " U " | wc -l)
