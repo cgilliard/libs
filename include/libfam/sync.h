@@ -17,6 +17,7 @@ void sync_destroy(Sync *sync);
 #define SYMC_IMPL_GUARD
 
 #include <libfam/iouring.h>
+#include <libfam/limits.h>
 #include <libfam/mmap.h>
 #include <libfam/syscall.h>
 #include <libfam/sysext.h>
@@ -145,6 +146,7 @@ PUBLIC void sync_destroy(Sync *sync) {
 /* GCOVR_EXCL_START */
 #ifdef TEST
 
+#include <libfam/debug.h>
 #include <libfam/test.h>
 
 Test(syncfail) {

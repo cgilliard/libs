@@ -67,9 +67,9 @@ i32 io_uring_enter2(u32 fd, u32 to_submit, u32 min_complete, u32 flags,
 		    void *arg, u64 sz);
 i32 io_uring_register(u32 fd, u32 opcode, void *arg, u32 nr_args);
 i32 close(i32 fd);
-PUBLIC i32 setsockopt(i32 socket, i32 level, i32 option_name,
-		      const void *option_value, u64 option_len);
-PUBLIC i32 getsockname(i32 sockfd, struct sockaddr *addr, u64 *addrlen);
+i32 setsockopt(i32 socket, i32 level, i32 option_name, const void *option_value,
+	       u64 option_len);
+i32 getsockname(i32 sockfd, struct sockaddr *addr, u64 *addrlen);
 
 #endif /* _SYSCALL_H */
 
