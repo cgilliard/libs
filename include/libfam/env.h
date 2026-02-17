@@ -103,6 +103,7 @@ PUBLIC i32 init_environ(char **envp, Arena *a) {
 }
 
 #ifdef TEST
+#include <libfam/test.h>
 
 Test(getenv) {
 	char *shell = getenv("SHELL");

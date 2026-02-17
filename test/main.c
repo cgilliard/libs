@@ -29,10 +29,9 @@ __asm__(
     "    bl main\n");
 #endif /* !__aarch64__ */
 
-#define TEST
-
 #include <libfam/test.h>
 
+/*
 #define ARENA_IMPL
 #define FORMAT_IMPL
 #define COLORS_IMPL
@@ -44,6 +43,7 @@ __asm__(
 #define STRING_IMPL
 #define STUBS_IMPL
 #define SYNC_IMPL
+*/
 
 #include <libfam/arena.h>
 #include <libfam/atomic.h>
@@ -51,12 +51,15 @@ __asm__(
 #include <libfam/env.h>
 #include <libfam/format.h>
 #include <libfam/string.h>
-#include <libfam/stubs.h>
+#include <libfam/stubsx.h>
 #include <libfam/sync.h>
 #include <libfam/syscall.h>
 #include <libfam/sysext.h>
 #include <libfam/test.h>
 #include <libfam/types.h>
+
+void __stack_chk_fail(void);
+void __stack_chk_fail(void) {}
 
 i32 cur_tests = 0;
 i32 exe_test = 0;
@@ -65,24 +68,20 @@ TestEntry tests[MAX_TESTS];
 TestEntry benches[MAX_TESTS];
 TestEntry *active;
 
-extern void (*__init_array_start[])(void);
-extern void (*__init_array_end[])(void);
-
 const char *SPACER =(void*)
     "------------------------------------------------------------------"
-    "--------------------------\n";
+    "--------------------------";
 
 int main(int argc, char **argv, char **envp) {
-	i32 count, i, test_count;
+	i32 count, test_count;
 	Arena *a = NULL;
 	test_count = 0;
-	count = __init_array_end - __init_array_start;
-	for (i = 0; i < count; i++) __init_array_start[i]();
 
 	arena_init(&a, 1024 * 1024 * 16, 8);
 	init_environ(envp, a);
 
-	pwrite(2, SPACER, __builtin_strlen(SPACER), -1);
+	u128 x = 0;
+	println("{} {}", x, SPACER);
 
 	for (exe_test = 0; exe_test < cur_tests; exe_test++) {
 		const char *msg = "Running test ";
@@ -95,16 +94,15 @@ int main(int argc, char **argv, char **envp) {
 		tests[exe_test].test_fn();
 	}
 
-	pwrite(2, SPACER, __builtin_strlen(SPACER), -1);
-	pwrite(2, "Success!\n", 9, -1);
+	println("{}", SPACER);
+	println("Success!");
 
 	exit_group(0);
 	(void)argc;
 	(void)argv;
-	(void)envp;
 }
 
-void add_test_fn(void (*test_fn)(void), const char *name) {
+PUBLIC void add_test_fn(void (*test_fn)(void), const char *name) {
 	if (__builtin_strlen((const void *)name) > MAX_TEST_NAME) {
 		const char *msg = "Test name too long!";
 		pwrite(2, msg, __builtin_strlen(msg), -1);

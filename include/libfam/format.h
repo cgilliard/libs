@@ -46,7 +46,7 @@
  * ```
  *
  * ```
- * # gcc -Iinclude test.c -o test
+ * # cc -Iinclude test.c -o test
  * ```
  *
  ****************************************************************************/
@@ -278,7 +278,7 @@ const char *format_to_string(Formatter *f);
 #include <libfam/errno.h>
 #include <libfam/limits.h>
 #include <libfam/string.h>
-#include <libfam/stubs.h>
+#include <libfam/stubsx.h>
 #include <libfam/syscall.h>
 #include <libfam/sysext.h>
 #include <libfam/utils.h>
@@ -597,6 +597,8 @@ PUBLIC const char *format_to_string(Formatter *f) {
 }
 
 #ifdef TEST
+#include <libfam/test.h>
+
 Test(format1) {
 	Formatter f = {0};
 	Printable p = {.t = StringType, .data.svalue = "xyz"};

@@ -319,6 +319,7 @@ PUBLIC void secure_zero32(u8 buf[32]) {
 }
 
 #ifdef TEST
+#include <libfam/test.h>
 
 Test(strlen) {
 	u64 len = strlen("abc");

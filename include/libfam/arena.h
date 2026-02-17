@@ -24,8 +24,9 @@ void arena_destroy(Arena *a);
 #include <libfam/limits.h>
 #include <libfam/syscall.h>
 #include <libfam/sysext.h>
+#include <libfam/utils.h>
 
-i32 arena_init(Arena **a, u64 size, u64 align) {
+PUBLIC i32 arena_init(Arena **a, u64 size, u64 align) {
 	Arena *ret;
 	if (size == 0 || align == 0 || (align & (align - 1)) != 0)
 		return -EINVAL;
@@ -44,7 +45,7 @@ i32 arena_init(Arena **a, u64 size, u64 align) {
 	return 0;
 }
 
-void *arena_alloc(Arena *__restrict a, u64 size) {
+PUBLIC void *arena_alloc(Arena *__restrict a, u64 size) {
 	void *ret;
 	u64 to_alloc;
 	if (!a) return NULL;
@@ -56,7 +57,7 @@ void *arena_alloc(Arena *__restrict a, u64 size) {
 	return ret;
 }
 
-void arena_destroy(Arena *a) {
+PUBLIC void arena_destroy(Arena *a) {
 	if (a && a->start) {
 		u64 size = a->end - a->start;
 		a->current = a->end = a->start = NULL;
@@ -66,6 +67,7 @@ void arena_destroy(Arena *a) {
 }
 
 #ifdef TEST
+#include <libfam/test.h>
 
 Test(alloc) {
 	Arena *a = NULL;

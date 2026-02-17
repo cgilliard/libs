@@ -4,6 +4,7 @@
 #include <libfam/syscall.h>
 #include <libfam/sysext.h>
 #include <libfam/types.h>
+#include <libfam/utils.h>
 
 #define MAX_TESTS 1024
 #define MAX_TEST_NAME 128
@@ -20,11 +21,12 @@ typedef struct {
 } TestEntry;
 extern TestEntry *active;
 
-#define Test(name)                                                         \
-	void __test_##name(void);                                          \
-	static void __attribute__((constructor)) __add_test_##name(void) { \
-		add_test_fn(__test_##name, #name);                         \
-	}                                                                  \
+#define Test(name)                                                  \
+	void __test_##name(void);                                   \
+	void __add_test_##name(void);                               \
+	void __attribute__((constructor)) __add_test_##name(void) { \
+		add_test_fn(__test_##name, #name);                  \
+	}                                                           \
 	void __test_##name(void)
 
 #define ASSERT(x, ...)                               \

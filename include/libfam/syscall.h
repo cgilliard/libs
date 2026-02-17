@@ -42,7 +42,7 @@
  * ```
  *
  * ```
- * # gcc -nostdlib -Iinclude test.c -o test
+ * # cc -nostdlib -Iinclude test.c -o test
  * ```
  *
  ****************************************************************************/
@@ -202,8 +202,8 @@ PUBLIC i32 close(i32 fd) {
  * Tests
  ****************************************************************************/
 #ifdef TEST
-
 #include <libfam/mmap.h>
+#include <libfam/test.h>
 
 Test(mmap) {
 	void *v = mmap(NULL, 4096, PROT_READ | PROT_WRITE,

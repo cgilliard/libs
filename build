@@ -18,16 +18,17 @@ CSTRICT="-nostdlib \
         -Wcast-qual \
         -Wmissing-prototypes \
         -Wmissing-declarations"
-BIN_DIR=target/bin
-LIB_DIR=target/lib
+BIN_DIR=./target/bin
 
 for arg in "$@"; do
     case "$arg" in
         all)
             ALL=1;
+	    LIB_DIR=./target/lib
             ;;
 	test)
 	    TEST=1;
+	    LIB_DIR=./target/libtest
 	    ;;
 	clean)
 	    CLEAN=1;
@@ -40,11 +41,17 @@ done
 
 if [ "${CLEAN}" = "0" ] && [ "${TEST}" = "0" ] && [ "${INSTALL}" = "0" ]; then
 	ALL=1;
+	LIB_DIR=./target/lib
+fi
+
+if [ "${CLEAN}" = "1" ]; then
+        rm -rf target/*
 fi
 
 if [ "${ALL}" = "1" ]; then
     mkdir -p ${LIB_DIR};
 elif [ "${TEST}" = "1" ]; then
+    mkdir -p ${LIB_DIR};
     mkdir -p ${BIN_DIR};
 fi
 
@@ -62,22 +69,39 @@ case "$ARCH" in
         ;;
 esac
 
-if [ "${CLEAN}" = "1" ]; then
-	rm -rf ${BIN_DIR} ${LIB_DIR}
-fi
-
 
 if [ "${TEST}" = "1" ]; then
+    for src in "$INCLUDE_DIR"/libfam/*.h; do
+        base=$(basename "$src" .h)
+        impl=$(echo "$base" | tr 'a-z' 'A-Z')_IMPL
+        COMMAND="${CC} \
+            ${INCLUDE} \
+            ${ARCH_FLAGS} \
+            ${CFLAGS} \
+            ${CSTRICT} \
+            -DTEST \
+            -shared \
+            -fPIC \
+            -D${impl} \
+            -x c  \
+            ${src} \
+            -o ${LIB_DIR}/lib${base}.so"
+        echo ${COMMAND};
+        ${COMMAND} || exit 1;
+    done
     COMMAND="${CC} \
 	${INCLUDE} \
 	${ARCH_FLAGS} \
 	${CFLAGS} \
 	${CSTRICT} \
-	-o ${BIN_DIR}/test \
-	test/main.c";
+	-o ${LIB_DIR}/main.o \
+	test/main.c -c";
     echo ${COMMAND};
     ${COMMAND} || exit 1;
-    ${BIN_DIR}/test || exit 1;
+    COMMAND="ld -o ${BIN_DIR}/runtests ${LIB_DIR}/main.o -L${LIB_DIR} -lformat -lenv -lstring -lsysext -lsyscall -lsync -lrbtree -larena -lstubsx -dynamic-linker /lib64/ld-linux-x86-64.so.2";
+    echo ${COMMAND};
+    ${COMMAND} || exit 1;
+    LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests || exit 1;
 elif [ "${ALL}" = "1" ]; then
     for src in "$INCLUDE_DIR"/libfam/*.h; do
 	base=$(basename "$src" .h)
