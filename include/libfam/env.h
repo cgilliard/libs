@@ -7,6 +7,7 @@
 char *getenv(const char *name);
 i32 init_environ(char **envp, Arena *a);
 
+#ifdef TEST
 #define IS_VALGRIND()                             \
 	({                                        \
 		bool _ret__;                      \
@@ -19,6 +20,10 @@ i32 init_environ(char **envp, Arena *a);
 	})
 
 #endif /* _ENV_H */
+
+void _debug_insert_env(const char *key, char *value, Arena *a);
+void _debug_remove_env(const char *key, char *value);
+#endif /* TEST */
 
 #ifdef ENV_IMPL
 #ifndef ENV_IMPL_GUARD
@@ -101,6 +106,24 @@ PUBLIC i32 init_environ(char **envp, Arena *a) {
 	}
 	return 0;
 }
+
+#ifdef TEST
+PUBLIC void _debug_insert_env(const char *key, char *value, Arena *a) {
+	EnvNode *node = arena_alloc(a, sizeof(EnvNode));
+	node->key = key;
+	node->key_len = strlen(key);
+	node->value = value;
+	rbtree_put(&__env_tree, (RbTreeNode *)node, env_rbtree_search);
+}
+PUBLIC void _debug_remove_env(const char *key, char *value) {
+	EnvNode node;
+	node.key = key;
+	node.key_len = strlen(key);
+	node.value = value;
+	rbtree_remove(&__env_tree, (RbTreeNode *)&node, env_rbtree_search);
+}
+
+#endif /* TEST */
 
 #ifdef TEST
 #include <libfam/test.h>

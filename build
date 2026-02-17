@@ -4,6 +4,7 @@ ALL=0;
 TEST=0;
 CLEAN=0;
 INSTALL=0;
+INSTALL_LIB=0;
 COVERAGE=0;
 CC="${CC:-clang}"
 CFLAGS="${CFLAGS:--O3 -fno-stack-clash-protection}"
@@ -43,10 +44,18 @@ for arg in "$@"; do
 	install)
 	    INSTALL=1;
 	    ;;
+        install_lib)
+            INSTALL_LIB=1;
+	    LIB_DIR=./target/lib
+            ;;
     esac
 done
 
-if [ "${CLEAN}" = "0" ] && [ "${TEST}" = "0" ] && [ "${INSTALL}" = "0" ] && [ "${COVERAGE}" = "0" ]; then
+if [ "${CLEAN}" = "0" ] &&
+   [ "${TEST}" = "0" ] &&
+   [ "${INSTALL}" = "0" ] &&
+   [ "${COVERAGE}" = "0" ] &&
+   [ "${INSTALL_LIB}" = "0" ]; then
 	ALL=1;
 	LIB_DIR=./target/lib
 fi
@@ -202,6 +211,12 @@ EOM
     fi
 elif [ "${INSTALL}" = "1" ]; then
 	rm -rf /usr/include/libfam
-	cp -rp $INCLUDE_DIR/libfam /usr/include
+	cp -rp $INCLUDE_DIR/libfam /usr/include || exit 1;
+elif [ "${INSTALL_LIB}" = "1" ]; then
+	if [ ! -e ${LIB_DIR}/libfam.so ]; then
+		echo "libfam.so does not exist! please run ./build all first.";
+		exit 1;
+	fi
+	cp -rp ${LIB_DIR}/libfam.so /usr/lib || exit 1;
 fi
 
