@@ -28,9 +28,12 @@
 
 /*****************************************************************************
  *
- * This library is dependent on format.h, types.h, stubs.h, errno.h, limits.h,
- * utils.h, syscall.h, sysext.h, and string.h. To use it, ensure that those
- * files along with syscall.h are in your include/libfam directory and you
+ * This library is dependent on the following files:
+ *
+ * errno.h  format.h   limits.h  net.h  string.h  sync.h     sysext.h  types.h
+ * file.h   iouring.h  mmap.h    pid.h  stubs.h   syscall.h  time.h    utils.h
+ *
+ * Make sure these files are in your include/libfam directory and you
  * must define several *_IMPLs before your include of the library. See below
  * for an example.
  *
