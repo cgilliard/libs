@@ -303,6 +303,25 @@ PUBLIC u8 u128_to_string(char buf[MAX_U128_STRING_LEN], u128 value,
 	}
 }
 
+#pragma GCC diagnostic push
+#ifdef __clang__
+#pragma GCC diagnostic ignored \
+    "-Wincompatible-pointer-types-discards-qualifiers"
+#else
+/* discarded-qualifiers]
+ */
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+#endif
+PUBLIC char *strstr(const char *s, const char *sub) {
+	for (; *s; s++) {
+		const char *tmps = s, *tmpsub = sub;
+		while (*tmps == *tmpsub && *tmps) tmps++, tmpsub++;
+		if (*tmpsub == '\0') return (const char *)s;
+	}
+	return NULL;
+}
+#pragma GCC diagnostic pop
+
 PUBLIC void secure_zero32(u8 buf[32]) {
 #ifdef __AVX2__
 	__asm__ __volatile__(
@@ -318,6 +337,7 @@ PUBLIC void secure_zero32(u8 buf[32]) {
 #endif /* !__AVX2__ */
 }
 
+/* GCOVR_EXCL_START */
 #ifdef TEST
 #include <libfam/test.h>
 
@@ -341,6 +361,158 @@ Test(to_string) {
 	ASSERT(!strcmp(buf, "1234"));
 }
 
+Test(strcmp) {
+	ASSERT(strcmp("abc", "def"), "abc!=def");
+	ASSERT(!strcmp("abc", "abc"), "abc=abc");
+}
+
+Test(strncpy) {
+	char x[1024] = {0};
+	char *in1 = "abc\0";
+	strncpy(x, in1, 4);
+	ASSERT_EQ(x[0], 'a', "a");
+	ASSERT_EQ(x[1], 'b', "b");
+	ASSERT_EQ(x[2], 'c', "c");
+	ASSERT_EQ(x[3], 0, "\0");
+}
+
+Test(f64_to_string) {
+	char buf[64] = {0};
+	u64 len;
+
+	len = f64_to_string(buf, 0.3, 1, false);
+	ASSERT_EQ(len, 3, "len=3");
+	ASSERT(!strcmp(buf, "0.3"), "0.3");
+
+	len = f64_to_string(buf, 0.0 / 0.0, 6, false);
+	ASSERT(!strcmp(buf, "nan"), "nan");
+	ASSERT_EQ(len, 3, "nan_len");
+
+	len = f64_to_string(buf, 1.0 / 0.0, 6, false);
+	ASSERT(!strcmp(buf, "inf"), "inf");
+	ASSERT_EQ(len, 3, "inf_len");
+
+	len = f64_to_string(buf, -1.0 / 0.0, 6, false);
+	ASSERT(!strcmp(buf, "-inf"), "neg_inf");
+	ASSERT_EQ(len, 4, "neg_inf_len");
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Woverflow"
+#pragma GCC diagnostic ignored "-Wliteral-range"
+	len = f64_to_string(buf, 1.8e308, 6, false);
+	ASSERT(!strcmp(buf, "inf"), "overflow_inf");
+	ASSERT_EQ(len, 3, "overflow_inf_len");
+#pragma GCC diagnostic pop
+
+	len = f64_to_string(buf, 0.0, 6, false);
+	ASSERT(!strcmp(buf, "0"), "zero");
+	ASSERT_EQ(len, 1, "zero_len");
+	len = f64_to_string(buf, -0.0, 6, false);
+	ASSERT(!strcmp(buf, "0"), "neg_zero");
+	ASSERT_EQ(len, 1, "neg_zero_len");
+
+	len = f64_to_string(buf, 123.0, 0, false);
+	ASSERT(!strcmp(buf, "123"), "int_pos");
+	ASSERT_EQ(len, 3, "int_pos_len");
+
+	len = f64_to_string(buf, -123.0, 0, false);
+	ASSERT(!strcmp(buf, "-123"), "int_neg");
+
+	ASSERT_EQ(len, 4, "int_neg_len");
+
+	len = f64_to_string(buf, 123.456789, 6, false);
+	ASSERT(!strcmp(buf, "123.456789"), "frac");
+	ASSERT_EQ(len, 10, "frac_len");
+
+	len = f64_to_string(buf, -123.456789, 6, false);
+	ASSERT(!strcmp(buf, "-123.456789"), "neg_frac");
+	ASSERT_EQ(len, 11, "neg_frac_len");
+
+	len = f64_to_string(buf, 0.9999995, 6, false);
+	ASSERT(!strcmp(buf, "1"), "round_up");
+	ASSERT_EQ(len, 1, "round_up_len");
+
+	len = f64_to_string(buf, 123.4000, 6, false);
+	ASSERT(!strcmp(buf, "123.4"), "trim_zeros");
+	ASSERT_EQ(len, 5, "trim_zeros_len");
+
+	len = f64_to_string(buf, 123.0000001, 6, false);
+	ASSERT(!strcmp(buf, "123"), "remove_decimal");
+	ASSERT_EQ(len, 3, "remove_decimal_len");
+
+	len = f64_to_string(buf, 123.456789123456789, 18, false);
+	buf[len] = 0;
+	ASSERT(!strcmp(buf, "123.45678912345678668"), "max_decimals");
+	ASSERT_EQ(len, 21, "max_decimals_len");
+
+	len = f64_to_string(buf, 123.456, -1, false);
+	ASSERT(!strcmp(buf, "123"), "neg_decimals");
+	ASSERT_EQ(len, 3, "neg_decimals_len");
+
+	len = f64_to_string(buf, 9993234.334, 2, true);
+	ASSERT(!strcmp(buf, "9,993,234.33"), "commas");
+	ASSERT_EQ(strlen("9,993,234.33"), len, "commas len");
+}
+
+Test(memmove) {
+	const char *test = "test";
+	const char *test2 = "aaaaa";
+	char out[1024] = {0};
+
+	ASSERT(memcmp(out, test, 4), "memcmp ne");
+	memcpy(out, test, 4);
+	ASSERT(!memcmp(out, test, 4), "memcmp eq");
+	memmove(out, test2, 5);
+	ASSERT(!memcmp(out, test2, 5), "memcmp eq");
+	memcpy(out + 5, "bbbbbbbb", 8);
+	memmove(out + 5, out, 8);
+	ASSERT(!memcmp(out, "aaa", 3), "memmove cmp");
+}
+
+Test(secure_zero) {
+	__attribute__((aligned(32))) u8 buf[32] = {1, 2, 3, 4};
+	ASSERT(memcmp(buf, (u8[32]){0}, 32), "not zero");
+	secure_zero32(buf);
+	ASSERT(!memcmp(buf, (u8[32]){0}, 32), "not zero");
+}
+
+Test(string_u128) {
+	u128 i;
+	u128 v1 = 1234;
+	i128 v2 = -5678;
+	char buf[MAX_I128_STRING_LEN];
+	ASSERT(u128_to_string(buf, v1, Int128DisplayTypeDecimal) > 0,
+	       "u128_to_string");
+	ASSERT(!strcmp(buf, "1234"), "1234");
+
+	ASSERT(i128_to_string(buf, v2, Int128DisplayTypeDecimal) > 0,
+	       "i128_to_string");
+	ASSERT(!strcmp(buf, "-5678"), "-5678");
+
+	for (i = 0; i < 100000 * 10000; i += 10000) {
+		u128 v = i;
+		u128 vout;
+		u128_to_string(buf, v, Int128DisplayTypeDecimal);
+		string_to_u128(buf, strlen(buf), &vout);
+		ASSERT_EQ(v, vout, "v=vout");
+	}
+
+	ASSERT_EQ(i128_to_string(buf, 0x123, Int128DisplayTypeHexUpper), 5,
+		  "len=5");
+	ASSERT(!strcmp(buf, "0x123"), "string 0x123");
+
+	ASSERT_EQ(i128_to_string(buf, 0xF, Int128DisplayTypeBinary), 4,
+		  "binary 0xF");
+	ASSERT(!strcmp(buf, "1111"), "string 1111");
+
+	ASSERT(u128_to_string(buf, 9993, Int128DisplayTypeCommas) > 0,
+	       "commas");
+	ASSERT(!strcmp(buf, "9,993"), "comma verify");
+}
+
 #endif /* TEST */
+/* GCOVR_EXCL_STOP */
+
 #endif /* STRING_IMPL_GUARD */
 #endif /* STRING_IMPL */

@@ -339,10 +339,13 @@ typedef struct {
 } TestRbTreeNode;
 
 i32 test_rbsearch(RbTreeNode *cur, const RbTreeNode *value,
+		  RbTreeNodePair *retval);
+
+i32 test_rbsearch(RbTreeNode *cur, const RbTreeNode *value,
 		  RbTreeNodePair *retval) {
 	while (cur) {
 		u64 v1 = ((TestRbTreeNode *)cur)->value;
-		u64 v2 = ((TestRbTreeNode *)value)->value;
+		u64 v2 = ((const TestRbTreeNode *)value)->value;
 		if (v1 == v2) {
 			retval->self = cur;
 			break;
