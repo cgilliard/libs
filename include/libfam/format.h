@@ -281,6 +281,7 @@ const char *format_to_string(Formatter *f);
 #ifndef FORMAT_IMPL_GUARD
 #define FORMAT_IMPL_GUARD
 
+#include <libfam/debug.h>
 #include <libfam/errno.h>
 #include <libfam/limits.h>
 #include <libfam/string.h>
@@ -463,35 +464,37 @@ static i32 format_proc_padding(Formatter *f, const FormatSpec *spec,
 }
 
 static i32 format_proc_uint(Formatter *f, const FormatSpec *spec, u128 value) {
-	i32 result;
 	char buf[MAX_U128_STRING_LEN];
 	Int128DisplayType idt = format_get_displayType(spec);
 	u64 raw_bytes;
+
+#ifdef TEST
+	if (_debug_proc_format_all) return -1;
+#endif /* TEST */
 
 	if (spec->t == FormatSpecTypeChar) {
 		buf[0] = value <= I8_MAX ? value : '?';
 		raw_bytes = 1;
 	} else
 		raw_bytes = u128_to_string(buf, value, idt);
-	if ((result = format_proc_padding(f, spec, buf, raw_bytes)) < 0)
-		return result;
-	return 0;
+	return format_proc_padding(f, spec, buf, raw_bytes);
 }
 
 static i32 format_proc_int(Formatter *f, const FormatSpec *spec, i128 value) {
-	i32 result;
 	char buf[MAX_I128_STRING_LEN];
 	Int128DisplayType idt = format_get_displayType(spec);
 	u64 raw_bytes;
+
+#ifdef TEST
+	if (_debug_proc_format_all) return -1;
+#endif /* TEST */
 
 	if (spec->t == FormatSpecTypeChar) {
 		buf[0] = value <= I8_MAX ? value : '?';
 		raw_bytes = 1;
 	} else
 		raw_bytes = i128_to_string(buf, value, idt);
-	if ((result = format_proc_padding(f, spec, buf, raw_bytes)) < 0)
-		return result;
-	return 0;
+	return format_proc_padding(f, spec, buf, raw_bytes);
 }
 
 static i32 format_proc_string(Formatter *f, const FormatSpec *spec,
@@ -500,16 +503,17 @@ static i32 format_proc_string(Formatter *f, const FormatSpec *spec,
 }
 
 static i32 format_proc_float(Formatter *f, const FormatSpec *spec, f64 value) {
-	i32 result;
 	char buf[MAX_F64_STRING_LEN];
 	u64 raw_bytes;
+
+#ifdef TEST
+	if (_debug_proc_format_all) return -1;
+#endif /* TEST */
 
 	raw_bytes =
 	    f64_to_string(buf, value, spec->has_precision ? spec->precision : 5,
 			  spec->t == FormatSpecTypeCommas);
-	if ((result = format_proc_padding(f, spec, buf, raw_bytes)) < 0)
-		return result;
-	return 0;
+	return format_proc_padding(f, spec, buf, raw_bytes);
 }
 
 PUBLIC i32 format_append(Formatter *f, const char *p, ...) {
@@ -602,32 +606,143 @@ PUBLIC const char *format_to_string(Formatter *f) {
 	return f->buf;
 }
 
+/* GCOVR_EXCL_START */
 #ifdef TEST
 #include <libfam/test.h>
 
 Test(format1) {
-	Formatter f = {0};
-	Printable p = {.t = StringType, .data.svalue = "xyz"};
-	i32 res = format_append(&f, "abc {} 123", p);
-	ASSERT(!res);
-	ASSERT(!strcmp(format_to_string(&f), "abc xyz 123"));
-	p.t = IntType;
-	p.data.ivalue = -123;
-	res = format_append(&f, "ghi {} 123", p);
-	ASSERT(!res);
-	ASSERT(!strcmp(format_to_string(&f), "abc xyz 123ghi -123 123"));
+	Formatter f = FORMATTER_INIT;
+	FORMAT(&f, "{}", 1);
+	ASSERT(!strcmp("1", format_to_string(&f)), "1");
 	format_clear(&f);
-	ASSERT(!strcmp(format_to_string(&f), ""));
-	p.t = FloatType;
-	p.data.fvalue = 10.3333333;
-	res = format_append(&f, "ok1 {:.3}", p);
-	ASSERT(!res);
-	ASSERT(!strcmp(format_to_string(&f), "ok1 10.333"));
+	FORMAT(&f, "{}", -1);
+	ASSERT(!strcmp("-1", format_to_string(&f)), "-1");
+	format_clear(&f);
+	FORMAT(&f, "x={x}", 0xFE);
+	ASSERT(!strcmp("x=0xfe", format_to_string(&f)), "x=0xfe");
+	format_clear(&f);
+	FORMAT(&f, "x={X},...", 255);
+	ASSERT(!strcmp("x=0xFF,...", format_to_string(&f)), "x=0xFF,...");
+	format_clear(&f);
+	FORMAT(&f, "a={},b={},c={},d={x}", "test", 1.23456, 9999, 253);
+	ASSERT(!strcmp("a=test,b=1.23456,c=9999,d=0xfd", format_to_string(&f)),
+	       "multi");
+	format_clear(&f);
+	FORMAT(&f, "a={c},b={b} {nothing", (u8)'a', 3);
+	ASSERT(!strcmp("a=a,b=11 {nothing", format_to_string(&f)),
+	       "char and bin");
+	format_clear(&f);
+	u64 x = 101;
+	FORMAT(&f, "{}", x);
+	ASSERT(!strcmp("101", format_to_string(&f)), "101");
+	format_clear(&f);
+	FORMAT(&f, "{n}", 1001);
+	ASSERT(!strcmp("1,001", format_to_string(&f)), "101 commas");
+	format_clear(&f);
+	FORMAT(&f, "x=${n.2}", 1234567.930432);
+	ASSERT(!strcmp("x=$1,234,567.93", format_to_string(&f)),
+	       "dollar format");
+	format_clear(&f);
 }
 
-Test(format2) { ASSERT(4, "expected {}", 4); }
+Test(format2) {
+	Formatter f = FORMATTER_INIT;
+	FORMAT(&f, "'{:5x}'", 10);
+	ASSERT(!strcmp("'  0xa'", format_to_string(&f)), "alignment hex");
+	format_clear(&f);
+	FORMAT(&f, "'{{' {}", 10);
+	ASSERT(!strcmp("'{' 10", format_to_string(&f)), "esc bracket left");
+	format_clear(&f);
+	FORMAT(&f, "'}}' {n}", 1000);
+	ASSERT(!strcmp("'}' 1,000", format_to_string(&f)),
+	       "esc bracket right and commas");
+	format_clear(&f);
+	FORMAT(&f, "{nn}", 10);
+	ASSERT(!strcmp("{nn}", format_to_string(&f)), "formatting error");
+	format_clear(&f);
+	FORMAT(&f, "'{:<20}'", 10);
+	ASSERT(!strcmp("'10                  '", format_to_string(&f)),
+	       "formatting error");
+	format_clear(&f);
+	FORMAT(&f, "'{:>20}'", 10);
+	ASSERT(!strcmp("'                  10'", format_to_string(&f)),
+	       "formatting error");
+	format_clear(&f);
+	FORMAT(&f, "{n{}", 10);
+	ASSERT(!strcmp("{n{}", format_to_string(&f)), "formatting error - int");
+	format_clear(&f);
+	i8 x = 'v';
+	FORMAT(&f, "{c}", x);
+	ASSERT(!strcmp("v", format_to_string(&f)), "i8 as char");
+	format_clear(&f);
+	FORMAT(&f, "{z}", "abc");
+	ASSERT(!strcmp("{z}", format_to_string(&f)),
+	       "formatting error - string");
+	format_clear(&f);
+	Printable p = {.t = 100, .data.ivalue = 100};
+	format_append(&f, "{}", p);
+	ASSERT(!strcmp("", format_to_string(&f)),
+	       "formatting error - invalid type");
+	format_clear(&f);
+	_debug_alloc_failure = 0;
+	FORMAT(&f, "{}", "abc");
+	_debug_alloc_failure = I64_MAX;
+	ASSERT(!strcmp(format_to_string(&f), ""), "alloc failure1");
+	format_clear(&f);
+	_debug_alloc_failure = 0;
+	FORMAT(&f, "{{");
+	_debug_alloc_failure = I64_MAX;
+	ASSERT(!strcmp(format_to_string(&f), ""), "alloc failure2");
+	format_clear(&f);
+	_debug_alloc_failure = 0;
+	FORMAT(&f, "}}");
+	_debug_alloc_failure = I64_MAX;
+
+	ASSERT(!strcmp(format_to_string(&f), ""), "alloc failure3");
+	format_clear(&f);
+}
+
+Test(format_errs) {
+	Formatter f1 = FORMATTER_INIT;
+	Formatter f2 = FORMATTER_INIT;
+	Formatter f3 = FORMATTER_INIT;
+	Formatter f4 = FORMATTER_INIT;
+	Formatter f5 = FORMATTER_INIT;
+
+	_debug_alloc_failure = 0;
+	FORMAT(&f1, "   ");
+	_debug_alloc_failure = I64_MAX;
+	ASSERT(!strcmp(format_to_string(&f1), ""), "alloc failure1");
+
+	_debug_alloc_failure = 0;
+	FORMAT(&f2, " {}    ", 1);
+	_debug_alloc_failure = I64_MAX;
+	ASSERT(!strcmp(format_to_string(&f2), ""), "alloc failure2");
+
+	_debug_proc_format_all = true;
+	FORMAT(&f3, " {}    ", 1.1);
+	_debug_proc_format_all = false;
+	ASSERT(!strcmp(format_to_string(&f3), " "), "float");
+
+	_debug_proc_format_all = true;
+	FORMAT(&f4, " {}    ", 1);
+	_debug_proc_format_all = false;
+	ASSERT(!strcmp(format_to_string(&f4), " "), "int");
+
+	_debug_proc_format_all = true;
+	FORMAT(&f5, " {}    ", 1U);
+	_debug_proc_format_all = false;
+	ASSERT(!strcmp(format_to_string(&f5), " "), "uint");
+
+	format_clear(&f1);
+	format_clear(&f2);
+	format_clear(&f3);
+	format_clear(&f4);
+	format_clear(&f5);
+}
 
 #endif /* TEST */
+/* GCOVR_EXCL_STOP */
 
 #endif /* FORMAT_IMPL */
 #endif /* FORMAT_IMPL_GUARD */

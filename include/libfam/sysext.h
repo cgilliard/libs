@@ -38,6 +38,7 @@ u64 cycle_counter(void);
 #ifndef SYSEXT_IMPL_GUARD
 #define SYSEXT_IMPL_GUARD
 
+#include <libfam/debug.h>
 #include <libfam/errno.h>
 #include <libfam/file.h>
 #include <libfam/iouring.h>
@@ -65,6 +66,9 @@ PUBLIC i64 pwrite(i32 fd, const void *buf, u64 len, u64 offset) {
 				   .len = len,
 				   .off = offset,
 				   .user_data = 1};
+#ifdef TEST
+	if (_debug_no_write) return len;
+#endif /* TEST */
 	if ((result = global_sync_init()) < 0) return result;
 	return sync_execute(__global_sync, sqe);
 }
@@ -340,7 +344,9 @@ PUBLIC u64 cycle_counter(void) {
 #endif
 }
 
+/* GCOVR_EXCL_START */
 #ifdef TEST
+#include <libfam/iov.h>
 #include <libfam/test.h>
 
 Test(map) {
@@ -350,9 +356,125 @@ Test(map) {
 	x = map(-1L);
 	ASSERT(!x);
 }
-Test(usleep2) { usleep(154); }
-#endif /* TEST */
+Test(open) {
+	i32 fd = open("/tmp/open_test1.dat", O_RDWR | O_CREAT, 0600);
+	ASSERT(fd > 0, "fd");
+	i32 res = io_uring_register(fd, IORING_REGISTER_FILES, NULL, 0);
+	ASSERT(res < 0, "not a ring fd");
 
+	struct statx st;
+	ASSERT(!statx("/tmp/open_test1.dat", &st), "statx");
+	ASSERT_EQ(st.stx_size, 0, "size=0");
+	ASSERT(!fallocate(fd, 100), "fallocate");
+	ASSERT(!fstatx(fd, &st), "fstatx");
+	ASSERT_EQ(st.stx_size, 100, "size=100");
+	u8 buf[100], verify[100] = {0}, *verify2;
+	i32 i;
+	for (i = 0; i < 100; i++) buf[i] = 3;
+	pwrite(fd, buf, 100, 0);
+	pread(fd, verify, 100, 0);
+	verify2 = fmap(fd, 100, 0);
+	ASSERT(!memcmp(buf, verify, 100), "verify");
+	ASSERT(!memcmp(buf, verify2, 100), "verify2");
+	fsync(fd);
+	fdatasync(fd);
+
+	munmap(verify2, 100);
+	close(fd);
+	unlink("/tmp/open_test1.dat");
+	fd = open("/tmp/open_test1.dat", O_RDONLY, 0);
+	ASSERT(fd < 0, "doesn't exist");
+}
+
+Test(socket) {
+	struct sockaddr_in src_addr = {0};
+	struct sockaddr_in addr = {.sin_family = AF_INET,
+				   .sin_port = htons(0),
+				   .sin_addr = {htonl(INADDR_ANY)}};
+	struct sockaddr_in dest_addr = {.sin_family = AF_INET,
+					.sin_addr = {htonl(0x7f000001U)}};
+	struct iovec msgvec[1] = {
+	    {.iov_base = "Hello1", .iov_len = 6},
+	};
+	struct msghdr msg = {.msg_name = &dest_addr,
+			     .msg_namelen = sizeof(dest_addr),
+			     .msg_iov = msgvec,
+			     .msg_iovlen = 1};
+	u8 msg_buf[32] = {0};
+	struct iovec msgoutvec[1] = {
+	    {.iov_base = msg_buf, .iov_len = 32},
+	};
+	struct msghdr msgout = {.msg_name = &src_addr,
+				.msg_namelen = sizeof(src_addr),
+				.msg_iov = msgoutvec,
+				.msg_iovlen = 1};
+
+	u64 addrlen = sizeof(addr);
+	u64 one = 1;
+	i32 res;
+	i32 sfd = socket(AF_INET, SOCK_DGRAM, 0);
+	ASSERT(sfd > 0, "server socket");
+	i32 cfd = socket(AF_INET, SOCK_DGRAM, 0);
+	ASSERT(cfd > 0, "client socket");
+
+	res = setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	ASSERT(!res, "setsockopt");
+	res = bind(sfd, (struct sockaddr *)&addr, addrlen);
+	ASSERT(!res, "bind");
+	res = getsockname(sfd, (void *)&addr, &addrlen);
+	ASSERT(!res, "getsockname");
+	ASSERT(addr.sin_port > 0, "port");
+
+	dest_addr.sin_port = addr.sin_port;
+
+	res = sendmsg(cfd, &msg, 0);
+	ASSERT_EQ(res, 6, "sendmsg");
+
+	res = recvmsg(sfd, &msgout, 0);
+	ASSERT_EQ(res, 6, "rcvmsg");
+	ASSERT(!memcmp(msg_buf, "Hello1", 6), "equal msg");
+	close(cfd);
+	close(sfd);
+}
+
+Test(misc_sysext) {
+	ASSERT_EQ(nsleep(1), -ETIME, "nsleep");
+	ASSERT_EQ(usleep(1), -ETIME, "usleep");
+	u8 buf[] = "abcdef", *ptr;
+	ptr = smap(6);
+	ASSERT(ptr);
+	memcpy(ptr, buf, 6);
+	ASSERT(!memcmp(ptr, buf, 6), "memcmp");
+	u64 v = cycle_counter();
+	yield();
+	v = cycle_counter() - v;
+	ASSERT(v, "cycle_counter");
+}
+
+Test(fork_wait) {
+	i32 pid = fork();
+	if (!pid) exit_group(0);
+	ASSERT(!waitpid(pid), "waitpid");
+}
+
+Test(write_num) {
+#define PATH "/tmp/write_num.dat"
+	u8 buf[1024];
+	u8 expected[] = "-92233720368547758080-123123";
+	i32 fd = open(PATH, O_RDWR | O_CREAT, 0600);
+	write_num(fd, (i64)(-0x7FFFFFFFFFFFFFFF - 1));
+	write_num(fd, 0);
+	write_num(fd, -123);
+	write_num(fd, 123);
+	pread(fd, buf, strlen(expected), 0);
+	ASSERT(!memcmp(buf, expected, strlen(expected)), "expected");
+	close(fd);
+	unlink(PATH);
+#undef PATH
+}
+
+#endif /* TEST */
+/* GCOVR_EXCL_STOP */
 #endif /* SYSEXT_IMPL_GUARD */
 #endif /* SYSEXT_IMPL */
 

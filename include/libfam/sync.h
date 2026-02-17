@@ -45,7 +45,7 @@ PUBLIC i32 sync_init(Sync **s) {
 
 	sync = mmap(NULL, sizeof(Sync), PROT_READ | PROT_WRITE,
 		    MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-	if (sync == MAP_FAILED) return -1;
+	if ((u64)sync > U64_MAX - 200) return -1;
 
 	sync->sq_ring = NULL;
 	sync->cq_ring = NULL;
@@ -66,7 +66,7 @@ PUBLIC i32 sync_init(Sync **s) {
 	sync->sq_ring = mmap(NULL, sync->sq_ring_size, PROT_READ | PROT_WRITE,
 			     MAP_SHARED, sync->ring_fd, IORING_OFF_SQ_RING);
 
-	if (sync->sq_ring == MAP_FAILED) {
+	if ((u64)sync->sq_ring > U64_MAX - 200) {
 		sync->sq_ring = NULL;
 		sync_destroy(sync);
 		return -1;
@@ -75,14 +75,14 @@ PUBLIC i32 sync_init(Sync **s) {
 	sync->cq_ring = mmap(NULL, sync->cq_ring_size, PROT_READ | PROT_WRITE,
 			     MAP_SHARED, sync->ring_fd, IORING_OFF_CQ_RING);
 
-	if (sync->cq_ring == MAP_FAILED) {
+	if ((u64)sync->cq_ring > U64_MAX - 200) {
 		sync->cq_ring = NULL;
 		sync_destroy(sync);
 		return -1;
 	}
 	sync->sqes = mmap(NULL, sync->sqes_size, PROT_READ | PROT_WRITE,
 			  MAP_SHARED, sync->ring_fd, IORING_OFF_SQES);
-	if (sync->sqes == MAP_FAILED) {
+	if ((u64)sync->sqes > U64_MAX - 200) {
 		sync->sqes = NULL;
 		sync_destroy(sync);
 		return -1;
@@ -116,7 +116,7 @@ PUBLIC i32 sync_execute(Sync *sync, const struct io_uring_sqe sqe) {
 	ret = io_uring_enter2(sync->ring_fd, 1, 1, flag, NULL, 0);
 
 	if (ret < 0)
-		__atomic_fetch_add(sync->sq_tail, 1, __ATOMIC_SEQ_CST);
+		__atomic_fetch_sub(sync->sq_tail, 1, __ATOMIC_SEQ_CST);
 	else {
 		idx = cq_head & cq_mask;
 		ret = sync->cqes[idx].res;
@@ -141,6 +141,43 @@ PUBLIC void sync_destroy(Sync *sync) {
 		munmap(sync, sizeof(Sync));
 	}
 }
+
+/* GCOVR_EXCL_START */
+#ifdef TEST
+
+#include <libfam/test.h>
+
+Test(syncfail) {
+	Sync *s = NULL;
+	_debug_io_uring_setup_fail = true;
+	ASSERT(sync_init(&s), "setup fail");
+	_debug_io_uring_setup_fail = false;
+	_debug_alloc_failure = 1;
+	ASSERT(sync_init(&s), "alloc 1 fail");
+	_debug_alloc_failure = I64_MAX;
+	_debug_alloc_failure = 2;
+	ASSERT(sync_init(&s), "alloc 2 fail");
+	_debug_alloc_failure = I64_MAX;
+	_debug_alloc_failure = 3;
+	ASSERT(sync_init(&s), "alloc 3 fail");
+	_debug_alloc_failure = I64_MAX;
+
+	ASSERT(!sync_init(&s), "init success");
+	_debug_io_uring_enter2_fail = true;
+	struct io_uring_sqe sqe = {.opcode = IORING_OP_WRITE,
+				   .addr = (u64) "abc\n",
+				   .fd = 2,
+				   .len = 4,
+				   .off = -1,
+				   .user_data = 1};
+	ASSERT(sync_execute(s, sqe) < 0, "exec err");
+
+	_debug_io_uring_enter2_fail = false;
+	sync_destroy(s);
+}
+
+#endif /* TEST */
+/* GCOVR_EXCL_STOP */
 
 #endif /* SYNC_IMPL_GUARD */
 #endif /* SYNC_IMPL */

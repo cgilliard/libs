@@ -55,6 +55,7 @@
 
 struct io_uring_params;
 struct timespec;
+struct sockaddr;
 
 i32 clock_gettime(i32 clockid, struct timespec *tp);
 void *mmap(void *addr, u64 length, i32 prot, i32 flags, i32 fd, i64 offset);
@@ -66,6 +67,9 @@ i32 io_uring_enter2(u32 fd, u32 to_submit, u32 min_complete, u32 flags,
 		    void *arg, u64 sz);
 i32 io_uring_register(u32 fd, u32 opcode, void *arg, u32 nr_args);
 i32 close(i32 fd);
+PUBLIC i32 setsockopt(i32 socket, i32 level, i32 option_name,
+		      const void *option_value, u64 option_len);
+PUBLIC i32 getsockname(i32 sockfd, struct sockaddr *addr, u64 *addrlen);
 
 #endif /* _SYSCALL_H */
 
@@ -78,6 +82,7 @@ i32 close(i32 fd);
  ****************************************************************************/
 
 #include <libfam/debug.h>
+#include <libfam/errno.h>
 #include <libfam/mmap.h>
 #include <libfam/utils.h>
 
@@ -148,20 +153,33 @@ PUBLIC i32 clone(i64 flags, void *sp) {
 #endif
 }
 
+/* GCOVR_EXCL_START */
 PUBLIC void exit_group(i32 status) {
+#ifdef TEST
+	if (_debug_no_exit) return;
+#endif /* TEST */
+
 #ifdef __aarch64__
 	syscall(94, status, 0, 0, 0, 0, 0);
 #elif defined(__x86_64__)
 	syscall(231, status, 0, 0, 0, 0, 0);
 #endif
 }
+/* GCOVR_EXCL_STOP */
 
 PUBLIC i32 io_uring_setup(u32 entries, struct io_uring_params *params) {
+#ifdef TEST
+	if (_debug_io_uring_setup_fail) return -EINVAL;
+#endif /* TEST */
 	return syscall(425, entries, (i64)params, 0, 0, 0, 0);
 }
 
 PUBLIC i32 io_uring_enter2(u32 fd, u32 to_submit, u32 min_complete, u32 flags,
 			   void *arg, u64 sz) {
+#ifdef TEST
+	if (_debug_io_uring_enter2_fail) return -EINVAL;
+#endif /* TEST */
+
 	return syscall(426, fd, to_submit, min_complete, flags, (i64)arg, sz);
 }
 
@@ -177,15 +195,35 @@ PUBLIC i32 close(i32 fd) {
 #endif
 }
 
+PUBLIC i32 setsockopt(i32 socket, i32 level, i32 option_name,
+		      const void *option_value, u64 option_len) {
+#ifdef __aarch64__
+	return syscall(208, (i64)socket, (i64)level, (i64)option_name,
+		       (i64)option_value, option_len, 0);
+#elif defined(__x86_64__)
+	return syscall(54, (i64)socket, (i64)level, (i64)option_name,
+		       (i64)option_value, option_len, 0);
+#endif
+}
+
+PUBLIC i32 getsockname(i32 sockfd, struct sockaddr *addr, u64 *addrlen) {
+#ifdef __aarch64__
+	return syscall(204, (i64)sockfd, (i64)addr, (i64)addrlen, 0, 0, 0);
+#elif defined(__x86_64__)
+	return syscall(51, (i64)sockfd, (i64)addr, (i64)addrlen, 0, 0, 0);
+#endif
+}
+
 /*****************************************************************************
  * Tests
  ****************************************************************************/
+/* GCOVR_EXCL_START */
 #ifdef TEST
-#include <libfam/errno.h>
 #include <libfam/format.h>
 #include <libfam/limits.h>
 #include <libfam/mmap.h>
 #include <libfam/test.h>
+#include <libfam/time.h>
 
 Test(mmap) {
 	void *v = mmap(NULL, 4096, PROT_READ | PROT_WRITE,
@@ -204,7 +242,13 @@ Test(clone) {
 	ASSERT(pid);
 }
 
+Test(gettime) {
+	struct timespec ts = {0};
+	ASSERT_EQ(clock_gettime(CLOCK_REALTIME, &ts), 0, "gettime");
+}
+
 #endif /* TEST */
+/* GCOVR_EXCL_STOP */
 
 #endif /* SYSCALL_IMPL_GUARD */
 #endif /* SYSCALL_IMPL */

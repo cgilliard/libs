@@ -539,6 +539,17 @@ Test(strstr) {
 	ASSERT_EQ(strstr(s, "abcdefghixyz"), NULL, "no match 2");
 }
 
+Test(string_chr_cat) {
+	const char *in = "abcdefgh";
+	ASSERT_EQ(strchr(in, 'c'), in + 2, "strchr");
+	ASSERT_EQ(strchr(in, 'v'), NULL, "strchr miss");
+	ASSERT_EQ(strchr(in, 0), in + strlen(in), "strchr strlen");
+	char buf[1024] = {0};
+	strcpy(buf, "abc");
+	strcat(buf, "def");
+	ASSERT(!strcmp(buf, "abcdef"), "buf");
+}
+
 #endif /* TEST */
 /* GCOVR_EXCL_STOP */
 

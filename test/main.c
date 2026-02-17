@@ -1,3 +1,4 @@
+/* GCOVR_EXCL_START */
 int main(int argc, char **argv, char **envp);
 
 #ifndef COVERAGE
@@ -140,4 +141,5 @@ PUBLIC void add_test_fn(void (*test_fn)(void), const char *name) {
 	__builtin_strcpy((void *)tests[cur_tests].name, (const void *)name);
 	cur_tests++;
 }
+/* GCOVR_EXCL_STOP */
 
