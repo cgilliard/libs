@@ -22,7 +22,7 @@ jobs:
       matrix:
         config:
           - platform: linux-amd64
-            runner: ubuntu-latest
+            runner: ubuntu-latest-minimal
           - platform: linux-aarch64
             runner: ubuntu-24.04-arm
         task:
