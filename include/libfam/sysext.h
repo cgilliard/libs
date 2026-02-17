@@ -41,6 +41,7 @@ u64 cycle_counter(void);
 #include <libfam/errno.h>
 #include <libfam/file.h>
 #include <libfam/iouring.h>
+#include <libfam/limits.h>
 #include <libfam/mmap.h>
 #include <libfam/net.h>
 #include <libfam/pid.h>
@@ -245,20 +246,20 @@ PUBLIC i64 bind(i32 sockfd, const struct sockaddr *addr, u64 addrlen) {
 PUBLIC void *map(u64 length) {
 	void *v = mmap(NULL, length, PROT_READ | PROT_WRITE,
 		       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	if (v == MAP_FAILED) return NULL;
+	if ((u64)v > U64_MAX - 2000) return NULL;
 	return v;
 }
 PUBLIC void *fmap(i32 fd, i64 size, i64 offset) {
 	void *v =
 	    mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, offset);
-	if (v == MAP_FAILED) return NULL;
+	if ((u64)v > U64_MAX - 2000) return NULL;
 	return v;
 }
 
 PUBLIC void *smap(u64 length) {
 	void *v = mmap(NULL, length, PROT_READ | PROT_WRITE,
 		       MAP_ANONYMOUS | MAP_SHARED, -1, 0);
-	if (v == MAP_FAILED) return NULL;
+	if ((u64)v > U64_MAX - 2000) return NULL;
 	return v;
 }
 
@@ -342,7 +343,13 @@ PUBLIC u64 cycle_counter(void) {
 #ifdef TEST
 #include <libfam/test.h>
 
-Test(usleep) { usleep(3); }
+Test(map) {
+	void *x = map(100);
+	ASSERT(x);
+	munmap(x, 100);
+	x = map(-1L);
+	ASSERT(!x);
+}
 Test(usleep2) { usleep(154); }
 #endif /* TEST */
 

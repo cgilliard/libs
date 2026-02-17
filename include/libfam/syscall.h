@@ -181,6 +181,9 @@ PUBLIC i32 close(i32 fd) {
  * Tests
  ****************************************************************************/
 #ifdef TEST
+#include <libfam/errno.h>
+#include <libfam/format.h>
+#include <libfam/limits.h>
 #include <libfam/mmap.h>
 #include <libfam/test.h>
 
@@ -188,8 +191,11 @@ Test(mmap) {
 	void *v = mmap(NULL, 4096, PROT_READ | PROT_WRITE,
 		       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	ASSERT(v);
-	ASSERT(v != MAP_FAILED);
+	ASSERT((u64)v > 0 && (u64)v < U64_MAX - 1000);
 	munmap(v, 4096);
+
+	v = mmap(NULL, 4096, U32_MAX, U32_MAX, -1, 0);
+	ASSERT_EQ(1 + (U64_MAX - (u64)v), EINVAL, "einval");
 }
 
 Test(clone) {
