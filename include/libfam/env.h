@@ -29,6 +29,7 @@ void _debug_remove_env(const char *key, char *value);
 #ifndef ENV_IMPL_GUARD
 #define ENV_IMPL_GUARD
 
+#include <libfam/debug.h>
 #include <libfam/errno.h>
 #include <libfam/rbtree.h>
 #include <libfam/string.h>
@@ -72,6 +73,9 @@ static i32 env_rbtree_search(RbTreeNode *cur, const RbTreeNode *value,
 		}
 		retval->self = cur;
 	}
+#ifdef TEST
+	if (_debug_env_insert_fail) return -1;
+#endif /* TEST */
 	return 0;
 }
 
@@ -84,7 +88,13 @@ PUBLIC char *getenv(const char *name) {
 
 PUBLIC i32 init_environ(char **envp, Arena *a) {
 	u64 i;
-	__env_tree.root = NULL;
+	RbTree *ptr;
+#ifdef TEST
+	ptr = _debug_env_rbtree ? _debug_env_rbtree : &__env_tree;
+#else
+	ptr = &__env_tree;
+#endif
+	ptr->root = NULL;
 
 	for (i = 0; envp[i]; i++) {
 		i32 res;
@@ -94,19 +104,19 @@ PUBLIC i32 init_environ(char **envp, Arena *a) {
 		EnvNode *node;
 
 		while (*itt && (*(itt++) != '=')) key_len++;
-		value = itt ? itt + 1 : NULL;
+		value = *itt ? itt + 1 : NULL;
 		node = arena_alloc(a, sizeof(EnvNode));
 		if (!node) return -ENOMEM;
 		node->key = key;
 		node->key_len = key_len;
 		node->value = value;
-		res = rbtree_put(&__env_tree, (RbTreeNode *)node,
-				 env_rbtree_search);
+		res = rbtree_put(ptr, (RbTreeNode *)node, env_rbtree_search);
 		if (res < 0) return res;
 	}
 	return 0;
 }
 
+/* GCOVR_EXCL_START */
 #ifdef TEST
 PUBLIC void _debug_insert_env(const char *key, char *value, Arena *a) {
 	EnvNode *node = arena_alloc(a, sizeof(EnvNode));
@@ -123,9 +133,6 @@ PUBLIC void _debug_remove_env(const char *key, char *value) {
 	rbtree_remove(&__env_tree, (RbTreeNode *)&node, env_rbtree_search);
 }
 
-#endif /* TEST */
-
-#ifdef TEST
 #include <libfam/test.h>
 
 Test(getenv) {
@@ -134,7 +141,48 @@ Test(getenv) {
 	ASSERT(!strncmp(shell, "bin", 3));
 }
 
+Test(test_special_cases) {
+	Arena *a = NULL;
+	char *envp[3];
+	RbTree tree;
+
+	arena_init(&a, 1024, 8);
+	_debug_env_rbtree = &tree;
+	envp[0] = "abc";
+	envp[1] = NULL;
+	ASSERT(!init_environ(envp, a), "empty value");
+	_debug_env_rbtree = NULL;
+	arena_destroy(a);
+
+	arena_init(&a, 1024, 8);
+	_debug_env_rbtree = &tree;
+	_debug_env_insert_fail = true;
+	envp[0] = "abc=123";
+	envp[1] = NULL;
+	ASSERT_EQ(init_environ(envp, a), -1, "insert_fail");
+	_debug_env_insert_fail = false;
+	_debug_env_rbtree = NULL;
+	arena_destroy(a);
+
+	arena_init(&a, 1024, 8);
+	_debug_env_rbtree = &tree;
+	envp[0] = "abc=";
+	envp[1] = NULL;
+	ASSERT(!init_environ(envp, a), "empty value 2");
+	_debug_env_rbtree = NULL;
+	arena_destroy(a);
+
+	arena_init(&a, 8, 1);
+	_debug_env_rbtree = &tree;
+	envp[0] = "abc=def";
+	envp[1] = NULL;
+	ASSERT_EQ(init_environ(envp, a), -ENOMEM, "enomem");
+	_debug_env_rbtree = NULL;
+	arena_destroy(a);
+}
+
 #endif /* TEST */
+/* GCOVR_EXCL_STOP */
 
 #endif /* ENV_IMPL */
 #endif /* ENV_IMPL_GUARD */
