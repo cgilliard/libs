@@ -1,0 +1,4 @@
+#!/bin/sh
+
+export CC=gcc; ./build clean test || exit 1;
+

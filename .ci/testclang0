@@ -1,0 +1,4 @@
+#!/bin/sh
+
+export CFLAGS=-O0; export CC=clang; ./build clean test || exit 1;
+

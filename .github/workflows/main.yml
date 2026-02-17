@@ -30,6 +30,10 @@ jobs:
           - buildclang
           - buildgcc0
           - buildclang0
+          - testgcc
+          - testclang
+          - testgcc0
+          - testclang0
     steps:
       - name: Checkout code
         uses: actions/checkout@v4  # Updated to latest version
