@@ -7,6 +7,7 @@ INSTALL=0;
 COVERAGE=0;
 CC="${CC:-clang}"
 CFLAGS="${CFLAGS:--O3 -fno-stack-clash-protection}"
+VALGRIND="${VALGRIND:-0}"
 TEST_DIR=./test
 INCLUDE_DIR=include
 INCLUDE="-I${INCLUDE_DIR}";
@@ -133,7 +134,17 @@ if [ "${TEST}" = "1" ]; then
         echo ${COMMAND};
         ${COMMAND} || exit 1;
     fi
-    LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests || exit 1;
+    if [ "${VALGRIND}" = "1" ]; then
+	    LD_LIBRARY_PATH=${LIB_DIR} \
+		    valgrind \
+		    --child-silent-after-fork=yes \
+                    --tool=memcheck \
+                    --track-origins=yes \
+                    --error-exitcode=1 \
+		    ${BIN_DIR}/runtests || exit 1;
+    else
+        LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests || exit 1;
+    fi
 elif [ "${COVERAGE}" = "1" ]; then
 	COMMAND="gcc \
 		${INCLUDE} \
