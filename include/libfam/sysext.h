@@ -38,7 +38,6 @@ u64 cycle_counter(void);
 #ifndef SYSEXT_IMPL_GUARD
 #define SYSEXT_IMPL_GUARD
 
-#include <libfam/atomic.h>
 #include <libfam/errno.h>
 #include <libfam/file.h>
 #include <libfam/iouring.h>
@@ -46,6 +45,7 @@ u64 cycle_counter(void);
 #include <libfam/net.h>
 #include <libfam/pid.h>
 #include <libfam/sync.h>
+#include <libfam/syscall.h>
 #include <libfam/time.h>
 #include <libfam/utils.h>
 

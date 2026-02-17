@@ -1,7 +1,246 @@
+/********************************************************************************
+ * MIT License
+ *
+ * Copyright (c) 2026 Christopher Gilliard
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ *******************************************************************************/
+
 #ifndef _FORMAT_H
 #define _FORMAT_H
 
+/*****************************************************************************
+ *
+ * This library is dependent on format.h, types.h, stubs.h, errno.h, limits.h,
+ * utils.h, syscall.h, sysext.h, and string.h. To use it, ensure that those
+ * files along with syscall.h are in your include/libfam directory and you
+ * must define several *_IMPLs before your include of the library. See below
+ * for an example.
+ *
+ *
+ * test.c
+ * ```
+ * #define SYSCALL_IMPL
+ * #define FORMAT_IMPL
+ * #define STRING_IMPL
+ * #define SYSEXT_IMPL
+ * #define SYNC_IMPL
+ * #define STUBS_IMPL
+ * #include <libfam/format.h>
+ *
+ * void main(void) {
+ *     println("{} + {} = {}", 1, 1, 2);
+ * }
+ * ```
+ *
+ * ```
+ * # gcc -Iinclude test.c -o format_test
+ * ```
+ *
+ ****************************************************************************/
+
+#include <libfam/string.h>
+#include <libfam/sysext.h>
 #include <libfam/types.h>
+#include <libfam/utils.h>
+
+#define FORMATTER_INIT {0};
+
+#pragma GCC diagnostic push
+#ifdef __clang__
+#pragma GCC diagnostic ignored \
+    "-Wincompatible-pointer-types-discards-qualifiers"
+#else
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+#endif /* !__clang__ */
+
+#define FORMAT_ITEM(ign, value)                                                \
+	({                                                                     \
+		Printable _p__ = _Generic((value),                             \
+		    char: ((Printable){                                        \
+			.t = IntType,                                          \
+			.data.ivalue =                                         \
+			    _Generic((value), char: (value), default: 0)}),    \
+		    signed char: ((Printable){.t = IntType,                    \
+					      .data.ivalue = _Generic((value), \
+					      signed char: (value),            \
+					      default: 0)}),                   \
+		    short int: ((Printable){.t = IntType,                      \
+					    .data.ivalue = _Generic((value),   \
+					    short int: (value),                \
+					    default: 0)}),                     \
+		    int: ((Printable){                                         \
+			.t = IntType,                                          \
+			.data.ivalue =                                         \
+			    _Generic((value), int: (value), default: 0)}),     \
+		    long: ((Printable){                                        \
+			.t = IntType,                                          \
+			.data.ivalue =                                         \
+			    _Generic((value), long: (value), default: 0)}),    \
+		    long long: ((Printable){.t = IntType,                      \
+					    .data.ivalue = _Generic((value),   \
+					    long long: (value),                \
+					    default: 0)}),                     \
+		    __int128_t: ((Printable){.t = IntType,                     \
+					     .data.ivalue = _Generic((value),  \
+					     __int128_t: (value),              \
+					     default: 0)}),                    \
+		    unsigned char: ((Printable){                               \
+			.t = UIntType,                                         \
+			.data.uvalue = _Generic((value),                       \
+			unsigned char: (value),                                \
+			default: 0)}),                                         \
+		    unsigned short int: ((Printable){                          \
+			.t = UIntType,                                         \
+			.data.uvalue = _Generic((value),                       \
+			unsigned short int: (value),                           \
+			default: 0)}),                                         \
+		    unsigned int: ((Printable){                                \
+			.t = UIntType,                                         \
+			.data.uvalue = _Generic((value),                       \
+			unsigned int: (value),                                 \
+			default: 0)}),                                         \
+		    unsigned long: ((Printable){                               \
+			.t = UIntType,                                         \
+			.data.uvalue = _Generic((value),                       \
+			unsigned long: (value),                                \
+			default: 0)}),                                         \
+		    unsigned long long: ((Printable){                          \
+			.t = UIntType,                                         \
+			.data.uvalue = _Generic((value),                       \
+			unsigned long long: (value),                           \
+			default: 0)}),                                         \
+		    __uint128_t: ((Printable){.t = UIntType,                   \
+					      .data.uvalue = _Generic((value), \
+					      __uint128_t: (value),            \
+					      default: 0)}),                   \
+		    char *: ((Printable){.t = StringType,                      \
+					 .data.svalue = _Generic((value),      \
+					 char *: (value),                      \
+					 default: NULL)}),                     \
+		    const char *: ((Printable){                                \
+			.t = StringType,                                       \
+			.data.svalue = _Generic((value),                       \
+			const char *: (value),                                 \
+			default: NULL)}),                                      \
+		    signed char *: ((Printable){                               \
+			.t = StringType,                                       \
+			.data.svalue = _Generic((value),                       \
+			char *: (value),                                       \
+			default: NULL)}),                                      \
+		    u8 *: ((Printable){.t = StringType,                        \
+				       .data.svalue = _Generic((value),        \
+				       const u8 *: (value),                    \
+				       u8 *: (value),                          \
+				       default: NULL)}),                       \
+		    const u8 *: ((Printable){.t = StringType,                  \
+					     .data.svalue = _Generic((value),  \
+					     const u8 *: (value),              \
+					     default: NULL)}),                 \
+		    void *: ((Printable){.t = UIntType,                        \
+					 .data.uvalue = _Generic((value),      \
+					 void *: ((u64)value),                 \
+					 default: 0)}),                        \
+		    double: ((Printable){.t = FloatType,                       \
+					 .data.fvalue = _Generic((value),      \
+					 double: (value),                      \
+					 default: 0.0)}),                      \
+		    float: ((Printable){                                       \
+			.t = FloatType,                                        \
+			.data.fvalue =                                         \
+			    _Generic((value), float: (value), default: 0.0)}), \
+		    default: ((Printable){                                     \
+			.t = StringType,                                       \
+			.data.svalue = (char *)"unsupported"}));               \
+		_p__;                                                          \
+	})
+
+#pragma GCC diagnostic pop
+
+#ifdef __clang__
+#define FORMAT(f, fmt, ...)                                                    \
+	({                                                                     \
+		_Pragma("GCC diagnostic push");                                \
+		/* clang-format off */                                       \
+                _Pragma("GCC diagnostic ignored \"-Wincompatible-pointer-types-discards-qualifiers\""); \
+		/* clang-format on */                                          \
+		format_append(                                                 \
+		    f, fmt __VA_OPT__(                                         \
+			   , FOR_EACH(FORMAT_ITEM, _, (, ), __VA_ARGS__)));    \
+		_Pragma("GCC diagnostic pop");                                 \
+	})
+#else
+#define FORMAT(f, fmt, ...)                                                   \
+	({                                                                    \
+		_Pragma("GCC diagnostic push");                               \
+		_Pragma("GCC diagnostic ignored \"-Wdiscarded-qualifiers\""); \
+		format_append(                                                \
+		    f, fmt __VA_OPT__(                                        \
+			   , FOR_EACH(FORMAT_ITEM, _, (, ), __VA_ARGS__)));   \
+		_Pragma("GCC diagnostic pop");                                \
+	})
+#endif
+
+#define println(fmt, ...)                                                    \
+	({                                                                   \
+		const char *_tmp__;                                          \
+		Formatter _f__ = {0};                                        \
+		if (FORMAT(&_f__, fmt, __VA_ARGS__) >= 0) {                  \
+			if (format_append(&_f__, "\n") >= 0) {               \
+				_tmp__ = format_to_string(&_f__);            \
+				if (_tmp__)                                  \
+					pwrite(2, _tmp__,                    \
+					       __builtin_strlen(_tmp__), 0); \
+			}                                                    \
+		}                                                            \
+		format_clear(&_f__);                                         \
+	})
+
+#define print(fmt, ...)                                                     \
+	({                                                                  \
+		const char *_tmp__;                                         \
+		Formatter _f__ = {0};                                       \
+		if (FORMAT(&_f__, fmt, __VA_ARGS__) >= 0) {                 \
+			_tmp__ = format_to_string(&_f__);                   \
+			if (_tmp__)                                         \
+				pwrite(2, _tmp__, __builtin_strlen(_tmp__), \
+				       0);                                  \
+		}                                                           \
+		format_clear(&_f__);                                        \
+	})
+
+#define panic(fmt, ...)                                                      \
+	({                                                                   \
+		const char *_tmp__;                                          \
+		Formatter _f__ = {0};                                        \
+		if (FORMAT(&_f__, fmt, __VA_ARGS__) >= 0) {                  \
+			if (format_append(&_f__, "\n") >= 0) {               \
+				_tmp__ = format_to_string(&_f__);            \
+				if (_tmp__)                                  \
+					pwrite(2, _tmp__,                    \
+					       __builtin_strlen(_tmp__), 0); \
+			}                                                    \
+		}                                                            \
+		format_clear(&_f__);                                         \
+		exit_group(-1);                                              \
+	})
 
 typedef struct {
 	char *buf;
@@ -40,6 +279,7 @@ const char *format_to_string(Formatter *f);
 #include <libfam/errno.h>
 #include <libfam/limits.h>
 #include <libfam/string.h>
+#include <libfam/stubs.h>
 #include <libfam/syscall.h>
 #include <libfam/sysext.h>
 #include <libfam/utils.h>
@@ -219,7 +459,7 @@ static i32 format_proc_padding(Formatter *f, const FormatSpec *spec,
 
 static i32 format_proc_uint(Formatter *f, const FormatSpec *spec, u128 value) {
 	i32 result;
-	u8 buf[MAX_U128_STRING_LEN];
+	char buf[MAX_U128_STRING_LEN];
 	Int128DisplayType idt = format_get_displayType(spec);
 	u64 raw_bytes;
 
@@ -235,7 +475,7 @@ static i32 format_proc_uint(Formatter *f, const FormatSpec *spec, u128 value) {
 
 static i32 format_proc_int(Formatter *f, const FormatSpec *spec, i128 value) {
 	i32 result;
-	u8 buf[MAX_I128_STRING_LEN];
+	char buf[MAX_I128_STRING_LEN];
 	Int128DisplayType idt = format_get_displayType(spec);
 	u64 raw_bytes;
 
@@ -256,7 +496,7 @@ static i32 format_proc_string(Formatter *f, const FormatSpec *spec,
 
 static i32 format_proc_float(Formatter *f, const FormatSpec *spec, f64 value) {
 	i32 result;
-	u8 buf[MAX_F64_STRING_LEN];
+	char buf[MAX_F64_STRING_LEN];
 	u64 raw_bytes;
 
 	raw_bytes =
@@ -376,6 +616,11 @@ Test(format1) {
 	res = format_append(&f, "ok1 {:.3}", p);
 	ASSERT(!res);
 	ASSERT(!strcmp(format_to_string(&f), "ok1 10.333"));
+}
+
+Test(format2) {
+	println("ok {} {} end", 1, "xyz");
+	println("x");
 }
 #endif /* TEST */
 

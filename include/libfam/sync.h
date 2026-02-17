@@ -1,8 +1,6 @@
 #ifndef _SYNC_H
 #define _SYNC_H
 
-#include <libfam/atomic.h>
-#include <libfam/syscall.h>
 #include <libfam/types.h>
 
 typedef struct Sync Sync;
@@ -20,6 +18,8 @@ void sync_destroy(Sync *sync);
 
 #include <libfam/iouring.h>
 #include <libfam/mmap.h>
+#include <libfam/syscall.h>
+#include <libfam/sysext.h>
 #include <libfam/utils.h>
 
 struct Sync {
@@ -112,15 +112,15 @@ PUBLIC i32 sync_execute(Sync *sync, const struct io_uring_sqe sqe) {
 	u32 idx, flag = IORING_ENTER_GETEVENTS;
 	sync->sq_array[index] = index;
 	sync->sqes[index] = sqe;
-	atomic_fetch_add32(sync->sq_tail, 1);
+	__atomic_fetch_add(sync->sq_tail, 1, __ATOMIC_SEQ_CST);
 	ret = io_uring_enter2(sync->ring_fd, 1, 1, flag, NULL, 0);
 
 	if (ret < 0)
-		atomic_fetch_add32(sync->sq_tail, 1);
+		__atomic_fetch_add(sync->sq_tail, 1, __ATOMIC_SEQ_CST);
 	else {
 		idx = cq_head & cq_mask;
 		ret = sync->cqes[idx].res;
-		atomic_fetch_add32(sync->cq_head, 1);
+		__atomic_fetch_add(sync->cq_head, 1, __ATOMIC_SEQ_CST);
 	}
 
 	return ret;
