@@ -328,5 +328,165 @@ PUBLIC RbTreeNode *rbtree_remove(RbTree *tree, RbTreeNode *value,
 	return pair.self;
 }
 
+/* GCOVR_EXCL_START */
+#ifdef TEST
+
+#include <libfam/test.h>
+
+typedef struct {
+	RbTreeNode _reserved;
+	u64 value;
+} TestRbTreeNode;
+
+i32 test_rbsearch(RbTreeNode *cur, const RbTreeNode *value,
+		  RbTreeNodePair *retval) {
+	while (cur) {
+		u64 v1 = ((TestRbTreeNode *)cur)->value;
+		u64 v2 = ((TestRbTreeNode *)value)->value;
+		if (v1 == v2) {
+			retval->self = cur;
+			break;
+		} else if (v1 < v2) {
+			retval->parent = cur;
+			retval->is_right = 1;
+			cur = cur->right;
+		} else {
+			retval->parent = cur;
+			retval->is_right = 0;
+			cur = cur->left;
+		}
+		retval->self = cur;
+	}
+	return 0;
+}
+
+#define PARENT(node) ((RbTreeNode *)((u64)node->parent_color & ~0x1))
+#define RIGHT(node) node->right
+#define LEFT(node) node->left
+#define ROOT(tree) (tree->root)
+#define IS_RED(node) (node && ((u64)node->parent_color & 0x1))
+#define IS_BLACK(node) !IS_RED(node)
+#define ROOT(tree) (tree->root)
+
+static bool check_root_black(RbTree *tree) {
+	if (!ROOT(tree)) return true;
+	return IS_BLACK(ROOT(tree));
+}
+
+static bool check_no_consecutive_red(RbTreeNode *node) {
+	if (!node) return true;
+
+	if (IS_RED(node)) {
+		if (RIGHT(node) && IS_RED(RIGHT(node))) return false;
+		if (LEFT(node) && IS_RED(LEFT(node))) return false;
+	}
+
+	return check_no_consecutive_red(LEFT(node)) &&
+	       check_no_consecutive_red(RIGHT(node));
+}
+
+static i32 check_black_height(RbTreeNode *node) {
+	i32 left_height, right_height;
+	if (!node) return 1;
+	left_height = check_black_height(LEFT(node));
+	right_height = check_black_height(RIGHT(node));
+
+	if (left_height == -1 || right_height == -1) return -1;
+
+	if (left_height != right_height) return -1;
+
+	return left_height + (IS_BLACK(node) ? 1 : 0);
+}
+
+static void validate_rbtree(RbTree *tree) {
+	ASSERT(check_root_black(tree), "Root must be black");
+	ASSERT(check_no_consecutive_red(ROOT(tree)),
+	       "No consecutive red nodes");
+	ASSERT(check_black_height(ROOT(tree)) != -1,
+	       "Inconsistent black height");
+}
+
+Test(rbtree1) {
+	RbTree tree = RBTREE_INIT;
+	TestRbTreeNode v1 = {{0}, 1};
+	TestRbTreeNode v2 = {{0}, 2};
+	TestRbTreeNode v3 = {{0}, 3};
+	TestRbTreeNode v4 = {{0}, 0};
+	TestRbTreeNode vx = {{0}, 3};
+	TestRbTreeNode vy = {{0}, 0};
+	RbTreeNodePair retval = {0};
+
+	rbtree_put(&tree, (RbTreeNode *)&v1, test_rbsearch);
+	validate_rbtree(&tree);
+	rbtree_put(&tree, (RbTreeNode *)&v2, test_rbsearch);
+	validate_rbtree(&tree);
+
+	test_rbsearch(tree.root, (RbTreeNode *)&v1, &retval);
+	ASSERT_EQ(((TestRbTreeNode *)retval.self)->value, 1, "value=1");
+
+	test_rbsearch(tree.root, (RbTreeNode *)&v2, &retval);
+	ASSERT_EQ(((TestRbTreeNode *)retval.self)->value, 2, "value=2");
+	test_rbsearch(tree.root, (RbTreeNode *)&v3, &retval);
+	ASSERT_EQ(retval.self, NULL, "self=NULL");
+
+	rbtree_remove(&tree, (RbTreeNode *)&v2, test_rbsearch);
+	validate_rbtree(&tree);
+	test_rbsearch(tree.root, (RbTreeNode *)&v2, &retval);
+	ASSERT_EQ(retval.self, NULL, "retval=NULL2");
+	rbtree_put(&tree, (RbTreeNode *)&v3, test_rbsearch);
+	validate_rbtree(&tree);
+	rbtree_put(&tree, (RbTreeNode *)&v4, test_rbsearch);
+	validate_rbtree(&tree);
+
+	ASSERT_EQ(rbtree_put(&tree, (RbTreeNode *)&vx, test_rbsearch),
+		  -EDUPLICATE, "duplicate");
+	validate_rbtree(&tree);
+
+	ASSERT_EQ(rbtree_put(&tree, (RbTreeNode *)&vy, test_rbsearch),
+		  -EDUPLICATE, "duplicate2");
+	validate_rbtree(&tree);
+}
+
+#define SIZE 100
+
+Test(rbtree2) {
+	u64 size, i;
+	u64 next = 101;
+
+	for (size = 1; size < SIZE; size++) {
+		RbTree tree = RBTREE_INIT;
+		TestRbTreeNode values[SIZE];
+		for (i = 0; i < size; i++) {
+			values[i].value = (next++ * 37) % 1001;
+			rbtree_put(&tree, (RbTreeNode *)&values[i],
+				   test_rbsearch);
+			validate_rbtree(&tree);
+		}
+
+		for (i = 0; i < size; i++) {
+			RbTreeNodePair retval = {0};
+			TestRbTreeNode v = {{0}, 0};
+			v.value = values[i].value;
+
+			test_rbsearch(tree.root, (RbTreeNode *)&v, &retval);
+			ASSERT(retval.self != NULL, "retval=NULL");
+			ASSERT_EQ(((TestRbTreeNode *)retval.self)->value,
+				  values[i].value, "value=values[i].value");
+		}
+
+		for (i = 0; i < size; i++) {
+			TestRbTreeNode v = {{0}, 0};
+			v.value = values[i].value;
+			rbtree_remove(&tree, (RbTreeNode *)&v, test_rbsearch);
+			validate_rbtree(&tree);
+		}
+		ASSERT_EQ(tree.root, NULL, "root=NULL");
+		validate_rbtree(&tree);
+	}
+}
+
+#endif /* TEST */
+/* GCOVR_EXCL_STOP */
+
 #endif /* RBTREE_IMPL_GUARD */
 #endif /* RBTREE_IMPL */
