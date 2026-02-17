@@ -101,6 +101,37 @@ Test(alloc) {
 
 	arena_destroy(a);
 }
+
+Test(failures) {
+	void *ptr = NULL;
+	Arena *a = NULL;
+	Arena x = {0};
+	i32 result;
+
+	result = arena_init(&a, 0, 8);
+	ASSERT_EQ(result, -EINVAL);
+	result = arena_init(&a, 1024, 0);
+	ASSERT_EQ(result, -EINVAL);
+	result = arena_init(&a, 1024, 3);
+	ASSERT_EQ(result, -EINVAL);
+	result = arena_init(&a, 1024, 1024L * 1024L * 1024L * 8L);
+	ASSERT_EQ(result, -EINVAL);
+	result = arena_init(&a, U64_MAX, 8);
+	ASSERT_EQ(result, -ENOMEM);
+	ptr = arena_alloc(NULL, 100);
+	ASSERT_EQ(ptr, NULL, "null input");
+
+	result = arena_init(&a, 1024, 8);
+	ASSERT_EQ(result, 0, "successful arena_init");
+	ptr = arena_alloc(a, 2048);
+	ASSERT(!ptr, "too big");
+	ptr = arena_alloc(a, U64_MAX);
+	ASSERT(!ptr, "overflow");
+
+	arena_destroy(a);
+	arena_destroy(NULL);
+	arena_destroy(&x);
+}
 #endif /* TEST */
 /* GCOVR_EXCL_STOP */
 

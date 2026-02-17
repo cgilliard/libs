@@ -25,15 +25,14 @@ const char *get_active(void);
 	}                                                           \
 	void __test_##name(void)
 
-#define ASSERT_EQ(x, y, ...)                                                 \
-	({                                                                   \
-		if ((x) != (y)) {                                            \
-			Formatter fmt = FORMATTER_INIT;                      \
-			__VA_OPT__(FORMAT(&fmt, __VA_ARGS__);)               \
-			panic("{}{}{}: [{}]. '{}'", BRIGHT_RED,              \
-			      __assertion_msg, RESET, active[exe_test].name, \
-			      format_to_string(&fmt));                       \
-		}                                                            \
+#define ASSERT_EQ(x, y, ...)                                                   \
+	({                                                                     \
+		if ((x) != (y)) {                                              \
+			Formatter fmt = FORMATTER_INIT;                        \
+			__VA_OPT__(FORMAT(&fmt, __VA_ARGS__);)                 \
+			panic("{}{}{}: [{}]. '{}'", BOLD_RED, __assertion_msg, \
+			      RESET, get_active(), format_to_string(&fmt));    \
+		}                                                              \
 	})
 
 #define ASSERT(x, ...)                                                         \
