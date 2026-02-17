@@ -21,6 +21,7 @@ char *strcpy(char *dest, const char *src);
 char *strncpy(char *dst, const char *src, u64 n);
 i32 strcmp(const char *x, const char *y);
 char *strstr(const char *s, const char *sub);
+char *strchr(const char *s, i32 c);
 char *strcat(char *dest, const char *src);
 void *memset(void *ptr, i32 x, u64 n);
 void *memcpy(void *dst, const void *src, u64 n);
@@ -308,8 +309,6 @@ PUBLIC u8 u128_to_string(char buf[MAX_U128_STRING_LEN], u128 value,
 #pragma GCC diagnostic ignored \
     "-Wincompatible-pointer-types-discards-qualifiers"
 #else
-/* discarded-qualifiers]
- */
 #pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
 #endif
 PUBLIC char *strstr(const char *s, const char *sub) {
@@ -319,6 +318,21 @@ PUBLIC char *strstr(const char *s, const char *sub) {
 		if (*tmpsub == '\0') return (const char *)s;
 	}
 	return NULL;
+}
+#pragma GCC diagnostic pop
+
+#pragma GCC diagnostic push
+#ifdef __clang__
+#pragma GCC diagnostic ignored \
+    "-Wincompatible-pointer-types-discards-qualifiers"
+#else
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+#endif
+PUBLIC char *strchr(const char *s, i32 c) {
+	do
+		if (*s == c) return (const char *)s;
+	while (*s++);
+	return !c ? (const char *)s : NULL;
 }
 #pragma GCC diagnostic pop
 
