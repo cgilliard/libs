@@ -38,7 +38,8 @@ jobs:
 
       - name: Check linux version
         run: uname -a
-
+      - name: Install clang
+        run: sudo apt install clang -y
       - name: ${{ matrix.task }}
         run: ./.ci/${{ matrix.task }}
         env:
