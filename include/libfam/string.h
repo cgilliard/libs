@@ -469,7 +469,6 @@ Test(f64_to_string) {
 	ASSERT_EQ(strlen("9,993,234.33"), len, "commas len");
 }
 
-/*
 Test(memmove) {
 	const char *test = "test";
 	const char *test2 = "aaaaa";
@@ -484,7 +483,7 @@ Test(memmove) {
 	memmove(out + 5, out, 8);
 	ASSERT(!memcmp(out, "aaa", 3), "memmove cmp");
 }
-*/
+
 Test(secure_zero) {
 	__attribute__((aligned(32))) u8 buf[32] = {1, 2, 3, 4};
 	ASSERT(memcmp(buf, (u8[32]){0}, 32), "not zero");
