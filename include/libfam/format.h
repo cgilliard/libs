@@ -28,26 +28,19 @@
 
 /*****************************************************************************
  *
- * First copy include/libfam/ *.h to your include directory.
- *
  * test.c
- * ```
- * #define SYSCALL_IMPL
- * #define FORMAT_IMPL
- * #define STRING_IMPL
- * #define SYSEXT_IMPL
- * #define SYNC_IMPL
- * #define STUBS_IMPL
- * #include <libfam/format.h>
+```
+#include <libfam/format.h>
+
+i32 main(void) {
+    println("{} + {} = {}", 1, 1, 2);
+    return 0;
+}
+```
  *
- * void main(void) {
- *     println("{} + {} = {}", 1, 1, 2);
- * }
- * ```
- *
- * ```
- * # cc -Iinclude test.c -o test
- * ```
+```
+cc -DFORMAT_ALL_IMPL test.c -o test
+```
  *
  ****************************************************************************/
 
@@ -269,6 +262,15 @@ typedef struct {
 i32 format_append(Formatter *f, const char *fmt, ...);
 void format_clear(Formatter *f);
 const char *format_to_string(Formatter *f);
+
+#ifdef FORMAT_ALL_IMPL
+#define SYSCALL_IMPL
+#define FORMAT_IMPL
+#define STRING_IMPL
+#define SYSEXT_IMPL
+#define SYNC_IMPL
+#define STUBS_IMPL
+#endif
 
 #endif /* _FORMAT_H */
 

@@ -1,5 +1,53 @@
+/********************************************************************************
+ * MIT License
+ *
+ * Copyright (c) 2026 Christopher Gilliard
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ *******************************************************************************/
+
 #ifndef _ARENA_H
 #define _ARENA_H
+
+/*****************************************************************************
+ *
+ * test.c
+```
+#include <libfam/arena.h>
+
+i32 main(void) {
+	char *ptr;
+	Arena *a = NULL;
+	arena_init(&a, 1024, 8);
+	ptr = arena_alloc(a, 128);
+	ptr[3] = 37;
+	exit_group(ptr[3]);
+	return 0;
+}
+```
+ *
+ * ```
+cc -DARENA_ALL_IMPL test.c -o test
+ * ```
+ *
+ ****************************************************************************/
 
 #include <libfam/types.h>
 
@@ -13,6 +61,13 @@ typedef struct {
 i32 arena_init(Arena **a, u64 size, u64 alignment);
 void *arena_alloc(Arena *a, u64 size);
 void arena_destroy(Arena *a);
+
+#ifdef ARENA_ALL_IMPL
+#define ARENA_IMPL
+#define SYSCALL_IMPL
+#define SYNC_IMPL
+#define SYSEXT_IMPL
+#endif
 
 #endif /* _ARENA_H */
 
