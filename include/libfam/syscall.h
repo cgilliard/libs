@@ -77,6 +77,8 @@ i32 close(i32 fd);
  * Implementation
  ****************************************************************************/
 
+#include <libfam/debug.h>
+#include <libfam/mmap.h>
 #include <libfam/utils.h>
 
 static inline i64 syscall(i64 sysno, i64 a0, i64 a1, i64 a2, i64 a3, i64 a4,
@@ -119,6 +121,10 @@ PUBLIC i32 clock_gettime(i32 clockid, struct timespec *tp) {
 
 PUBLIC void *mmap(void *addr, u64 length, i32 prot, i32 flags, i32 fd,
 		  i64 offset) {
+#ifdef TEST
+	if (_debug_alloc_failure-- == 0) return MAP_FAILED;
+#endif /* TEST */
+
 #ifdef __aarch64__
 	return (void *)syscall(222, (i64)addr, length, prot, flags, fd, offset);
 #elif defined(__x86_64__)

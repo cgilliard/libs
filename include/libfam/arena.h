@@ -68,6 +68,7 @@ PUBLIC void arena_destroy(Arena *a) {
 
 /* GCOVR_EXCL_START */
 #ifdef TEST
+#include <libfam/debug.h>
 #include <libfam/test.h>
 
 Test(alloc) {
@@ -131,6 +132,17 @@ Test(failures) {
 	arena_destroy(a);
 	arena_destroy(NULL);
 	arena_destroy(&x);
+
+	a = NULL;
+	result = arena_init(&a, 1024 * 1024, 4096);
+	ASSERT_EQ(result, 0, "successful arena_init (4096)");
+	arena_destroy(a);
+
+	a = NULL;
+	_debug_alloc_failure = 0;
+	result = arena_init(&a, 1024 * 1024, 4096);
+	ASSERT_EQ(result, -ENOMEM, "enomem {}", result);
+	_debug_alloc_failure = I64_MAX;
 }
 #endif /* TEST */
 /* GCOVR_EXCL_STOP */

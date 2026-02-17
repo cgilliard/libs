@@ -35,6 +35,7 @@ __asm__(
 #include <libfam/test.h>
 
 #ifdef COVERAGE
+#define DEBUG_IMPL
 #define FORMAT_IMPL
 #define ARENA_IMPL
 #define ENV_IMPL
