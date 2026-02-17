@@ -29,24 +29,7 @@ __asm__(
     "    bl main\n");
 #endif /* !__aarch64__ */
 
-#include <libfam/test.h>
-
-/*
-#define ARENA_IMPL
-#define FORMAT_IMPL
-#define COLORS_IMPL
-#define RBTREE_IMPL
-#define ENV_IMPL
-#define SYSCALL_IMPL
-#define TYPES_IMPL
-#define SYSEXT_IMPL
-#define STRING_IMPL
-#define STUBS_IMPL
-#define SYNC_IMPL
-*/
-
 #include <libfam/arena.h>
-#include <libfam/atomic.h>
 #include <libfam/colors.h>
 #include <libfam/env.h>
 #include <libfam/format.h>
@@ -57,9 +40,6 @@ __asm__(
 #include <libfam/sysext.h>
 #include <libfam/test.h>
 #include <libfam/types.h>
-
-void __stack_chk_fail(void);
-void __stack_chk_fail(void) {}
 
 i32 cur_tests = 0;
 i32 exe_test = 0;
@@ -80,8 +60,7 @@ int main(int argc, char **argv, char **envp) {
 	arena_init(&a, 1024 * 1024 * 16, 8);
 	init_environ(envp, a);
 
-	u128 x = 0;
-	println("{} {}", x, SPACER);
+	println("{}", SPACER);
 
 	for (exe_test = 0; exe_test < cur_tests; exe_test++) {
 		const char *msg = "Running test ";

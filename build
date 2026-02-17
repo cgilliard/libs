@@ -71,8 +71,10 @@ esac
 
 
 if [ "${TEST}" = "1" ]; then
+    LIBS="";
     for src in "$INCLUDE_DIR"/libfam/*.h; do
         base=$(basename "$src" .h)
+	LIBS="${LIBS} -l${base}"
         impl=$(echo "$base" | tr 'a-z' 'A-Z')_IMPL
         COMMAND="${CC} \
             ${INCLUDE} \
@@ -96,9 +98,16 @@ if [ "${TEST}" = "1" ]; then
 	${CSTRICT} \
 	-o ${LIB_DIR}/main.o \
 	test/main.c -c";
+    echo ${LIBS};
     echo ${COMMAND};
     ${COMMAND} || exit 1;
-    COMMAND="ld -o ${BIN_DIR}/runtests ${LIB_DIR}/main.o -L${LIB_DIR} -lformat -lenv -lstring -lsysext -lsyscall -lsync -lrbtree -larena -lstubsx -dynamic-linker /lib64/ld-linux-x86-64.so.2";
+    LDSO_PATH=`ldd /bin/ls | grep 'ld-linux' | awk '{print $1}'`;
+    COMMAND="ld \
+	-o ${BIN_DIR}/runtests \
+	${LIB_DIR}/main.o \
+	-L${LIB_DIR} \
+	${LIBS} \
+	-dynamic-linker ${LDSO_PATH}";
     echo ${COMMAND};
     ${COMMAND} || exit 1;
     LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests || exit 1;
