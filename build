@@ -13,6 +13,7 @@ TEST_DIR=./test
 INCLUDE_DIR=include
 INCLUDE="-I${INCLUDE_DIR}";
 CSTRICT="-nostdlib \
+	-fno-builtin \
 	-fvisibility=hidden \
         -std=c99 \
         -Werror \

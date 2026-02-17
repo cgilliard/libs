@@ -485,7 +485,6 @@ Test(memmove) {
 	ASSERT(!memcmp(out, "aaa", 3), "memmove cmp");
 }
 */
-
 Test(secure_zero) {
 	__attribute__((aligned(32))) u8 buf[32] = {1, 2, 3, 4};
 	ASSERT(memcmp(buf, (u8[32]){0}, 32), "not zero");
