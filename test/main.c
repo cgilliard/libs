@@ -53,6 +53,7 @@ const char *SPACER =(void*)
     "--------------------------";
 
 int main(int argc, char **argv, char **envp) {
+	i64 global_timer;
 	i32 count, test_count;
 	Arena *a = NULL;
 	test_count = 0;
@@ -60,21 +61,40 @@ int main(int argc, char **argv, char **envp) {
 	arena_init(&a, 1024 * 1024 * 16, 8);
 	init_environ(envp, a);
 
+	println("{}Running {} tests{}...", BOLD_BLUE, cur_tests, RESET);
 	println("{}", SPACER);
 
+	global_timer = micros();
 	for (exe_test = 0; exe_test < cur_tests; exe_test++) {
-		const char *msg = "Running test ";
-		pwrite(2, msg, __builtin_strlen(msg), -1);
-		write_num(2, ++test_count);
-		pwrite(2, " (", 2, -1);
-		pwrite(2, tests[exe_test].name,
-		       __builtin_strlen(tests[exe_test].name), -1);
-		pwrite(2, ")\n", 2, -1);
+		i64 timer = 0;
+		print("{}Running test{} {} [{}{}{}]", YELLOW, RESET,
+		      ++test_count, DIMMED, tests[exe_test].name, RESET);
+		timer = micros();
 		tests[exe_test].test_fn();
+		timer = micros() - timer;
+		if (timer < 1000)
+			println(" {}[{}µs]{}", GREEN, timer, RESET);
+		else if (timer < 1000000)
+			println(" {}[{:.2}ms]{}", YELLOW, (f64)timer / 1000.0,
+				RESET);
+		else
+			println(" {}[{:.2}s]{}", BOLD_RED,
+				(f64)timer / 1000000.0, RESET);
 	}
-
+	global_timer = micros() - global_timer;
 	println("{}", SPACER);
-	println("Success!");
+	if (global_timer < 1000)
+		println("{}Success!{} {} {}tests passed!{} {}[{}µs]{}", GREEN,
+			RESET, cur_tests, BOLD_BLUE, RESET, GREEN, global_timer,
+			RESET);
+	else if (global_timer < 1000000)
+		println("{}Success!{} {} {}tests passed!{} {}[{:.2}ms]{}",
+			GREEN, RESET, cur_tests, BOLD_BLUE, RESET, YELLOW,
+			(f64)global_timer / 1000.0, RESET);
+	else
+		println("{}Success!{} {} {}tests passed!{} {}[{:.2}s]{}", GREEN,
+			RESET, cur_tests, BOLD_BLUE, RESET, RED,
+			(f64)global_timer / 1000000.0, RESET);
 
 	exit_group(0);
 	(void)argc;

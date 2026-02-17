@@ -339,6 +339,13 @@ PUBLIC u64 cycle_counter(void) {
 #endif
 }
 
+#ifdef TEST
+#include <libfam/test.h>
+
+Test(usleep) { usleep(3); }
+Test(usleep2) { usleep(154); }
+#endif /* TEST */
+
 #endif /* SYSEXT_IMPL_GUARD */
 #endif /* SYSEXT_IMPL */
 

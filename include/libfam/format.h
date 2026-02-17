@@ -619,10 +619,7 @@ Test(format1) {
 	ASSERT(!strcmp(format_to_string(&f), "ok1 10.333"));
 }
 
-Test(format2) {
-	println("ok {} {} end", 1, "xyz");
-	println("x");
-}
+Test(format2) {}
 #endif /* TEST */
 
 #endif /* FORMAT_IMPL */

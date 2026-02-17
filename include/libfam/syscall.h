@@ -125,7 +125,7 @@ PUBLIC i32 clock_gettime(i32 clockid, struct timespec *tp) {
 #ifdef __aarch64__
 	syscall(&result, 113, clockid, (i64)tp, 0, 0, 0, 0);
 #elif defined(__x86_64__)
-	syscall(&result, 231, clockid, (i64)tp, 0, 0, 0, 0);
+	syscall(&result, 228, clockid, (i64)tp, 0, 0, 0, 0);
 #endif
 	return result;
 }
