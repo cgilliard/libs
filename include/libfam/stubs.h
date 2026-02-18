@@ -250,6 +250,16 @@ Test(branch_conditions_div) {
 	ASSERT_EQ(r, 18446744069414584319UL, "U64_MAX for all inputs");
 }
 
+Test(divmod) {
+#define PRIME ((u128)18446744073709551557UL)
+	u64 cc = cycle_counter();
+	u128 v128 = (u128)cc * PRIME;
+	/*
+	println("v128={}", v128);
+	*/
+#undef PRIME
+}
+
 #endif
 /* GCOVR_EXCL_STOP */
 

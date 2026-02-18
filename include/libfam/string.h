@@ -181,7 +181,6 @@ PUBLIC u8 f64_to_string(char buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
 		}
 		if (commas) {
 			u64 digit_count = i;
-			write_num(2, digit_count);
 			u64 digits_until_comma =
 			    digit_count % 3 ? digit_count % 3 : 3;
 			i--;
@@ -606,7 +605,6 @@ Test(f64_comma) {
 	u8 len;
 	len = f64_to_string(buf, 1234.567, 2, true);
 	buf[len] = 0;
-	println("buf={}", buf);
 	ASSERT(!strcmp(buf, "1,234.57"), "1,234.57");
 	len = f64_to_string(buf, 234.567, 2, true);
 	ASSERT(!strcmp(buf, "234.57"), "1,234.57");
