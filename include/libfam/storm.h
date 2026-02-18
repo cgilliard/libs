@@ -83,6 +83,54 @@ PUBLIC void storm_init(StormContext *ctx, const u8 key[32]) {
 	memset(st->counter, 0, 32);
 }
 
+#ifdef __VAES__
+PUBLIC void storm_next_block(StormContext *ctx_void, u8 buf[32]) {
+	StormContextImpl *ctx = (StormContextImpl *)ctx_void;
+	__asm__ __volatile__(
+	    "vmovdqa     (%[ctx]),      %%ymm0           \n\t"
+	    "vpxor       (%[buf]),      %%ymm0, %%ymm0   \n\t"
+	    "vaesenc     0x20(%[ctx]),  %%ymm0, %%ymm0   \n\t"
+	    "vextracti128 $1,           %%ymm0, %%xmm1   \n\t"
+	    "vpxor       %%xmm1,        %%xmm0, %%xmm2   \n\t"
+	    "vinserti128 $1,            %%xmm2, %%ymm1, %%ymm1   \n\t"
+	    "vmovdqa     %%ymm1,        (%[ctx])         \n\t"
+	    "vaesenc     0x40(%[ctx]),  %%ymm0, %%ymm0   \n\t"
+	    "vpxor       %%ymm0,        %%ymm1, %%ymm0   \n\t"
+	    "vaesenc     0x60(%[ctx]),  %%ymm0, %%ymm0   \n\t"
+	    "vaesenc     0x80(%[ctx]),  %%ymm0, %%ymm0   \n\t"
+	    "vmovdqa     %%ymm0,        (%[buf])         \n\t"
+	    "vzeroupper                                  \n\t"
+	    :
+	    : [ctx] "r"(ctx), [buf] "r"(buf)
+	    : "ymm0", "ymm1", "xmm0", "xmm1", "xmm2", "memory");
+}
+
+PUBLIC void storm_xcrypt_buffer(StormContext *ctx_void, u8 buf[32]) {
+	StormContextImpl *ctx = (StormContextImpl *)ctx_void;
+	__asm__ __volatile__(
+	    "vmovdqa     (%[ctx]),      %%ymm0              \n\t"
+	    "vpxor       0xa0(%[ctx]),  %%ymm0, %%ymm0      \n\t"
+	    "vaesenc     0x20(%[ctx]),  %%ymm0, %%ymm0      \n\t"
+	    "vextracti128 $1,           %%ymm0, %%xmm1      \n\t"
+	    "vpxor       %%xmm1,        %%xmm0, %%xmm2      \n\t"
+	    "vinserti128 $1,            %%xmm2, %%ymm1, %%ymm1 \n\t"
+	    "vmovdqa     %%ymm1,        (%[ctx])            \n\t"
+	    "vaesenc     0x40(%[ctx]),  %%ymm0, %%ymm0      \n\t"
+	    "vpxor       %%ymm0,        %%ymm1, %%ymm0      \n\t"
+	    "vaesenc     0x60(%[ctx]),  %%ymm0, %%ymm0      \n\t"
+	    "vaesenc     0x80(%[ctx]),  %%ymm0, %%ymm0      \n\t"
+	    "vpxor       (%[buf]),      %%ymm0, %%ymm0      \n\t"
+	    "vmovdqa     %%ymm0,        (%[buf])            \n\t"
+	    "vmovdqa     0xa0(%[ctx]),  %%ymm0              \n\t"
+	    "vpcmpeqd    %%ymm1,        %%ymm1, %%ymm1      \n\t"
+	    "vpsubq      %%ymm1,        %%ymm0, %%ymm0      \n\t"
+	    "vmovdqa     %%ymm0,        0xa0(%[ctx])        \n\t"
+	    "vzeroupper                                     \n\t"
+	    :
+	    : [ctx] "r"(ctx), [buf] "r"(buf)
+	    : "ymm0", "ymm1", "xmm0", "xmm1", "xmm2", "memory");
+}
+#else
 PUBLIC void storm_next_block(StormContext *ctx, u8 buf[32]) {
 	StormContextImpl *st = (StormContextImpl *)ctx;
 	u8 x[32], y[32];
@@ -113,6 +161,7 @@ PUBLIC void storm_xcrypt_buffer(StormContext *ctx, u8 buf[32]) {
 	++counter[2];
 	++counter[3];
 }
+#endif /* !__VAES__ */
 
 /* GCOVR_EXCL_START */
 #ifdef TEST
@@ -148,15 +197,15 @@ Test(storm_cipher) {
 	__attribute__((aligned(32))) u8 buffer5[32] = {0};
 
 	storm_init(&ctx, SEED);
-	__builtin_strcpy(buffer1, "test1");
+	memcpy(buffer1, "test1", 5);
 	storm_xcrypt_buffer(&ctx, buffer1);
-	__builtin_strcpy(buffer2, "test2");
+	memcpy(buffer2, "test2", 5);
 	storm_xcrypt_buffer(&ctx, buffer2);
-	__builtin_strcpy(buffer3, "blahblah");
+	memcpy(buffer3, "blahblah", 8);
 	storm_xcrypt_buffer(&ctx, buffer3);
-	__builtin_strcpy(buffer4, "ok");
+	memcpy(buffer4, "ok", 2);
 	storm_xcrypt_buffer(&ctx, buffer4);
-	__builtin_strcpy(buffer5, "x");
+	memcpy(buffer5, "x", 1);
 	storm_xcrypt_buffer(&ctx, buffer5);
 
 	ASSERT(memcmp(buffer1, "test1", 5), "ne1");
@@ -185,24 +234,6 @@ Test(storm_cipher) {
 
 #endif /* TEST */
 /* GCOVR_EXCL_STOP */
-
-/*
-#ifdef __VAES__
-static inline void aesenc256avx(void *data, const void *key) {
-	__asm__ __volatile__(
-	    "vmovdqu     (%[data]),  %%ymm0           \n\t"
-	    "vmovdqu     (%[key]),   %%xmm1           \n\t"
-	    "vmovdqu     16(%[key]), %%xmm2           \n\t"
-	    "vinserti128 $1, %%xmm2, %%ymm1, %%ymm1   \n\t"
-	    "vaesenc     %%ymm1,     %%ymm0, %%ymm0   \n\t"
-	    "vmovdqu     %%ymm0,     (%[data])        \n\t"
-
-	    :
-	    : [data] "r"(data), [key] "r"(key)
-	    : "xmm0", "xmm1", "xmm2", "ymm0", "ymm1", "memory");
-}
-#endif
-*/
 
 #endif /* STORM_IMPL_GUARD */
 #endif /* STORM_IMPL */
