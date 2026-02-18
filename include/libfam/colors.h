@@ -115,6 +115,16 @@ Test(colors1) {
 	ASSERT(!strcmp(format_to_string(&f), "\x1b[1;34mtest\x1b[0m"),
 	       "bold blue");
 	format_clear(&f);
+	FORMAT(&f, "{}test{}", BOLD_GREEN, RESET);
+	ASSERT(!strcmp(format_to_string(&f), "\x1b[1;32mtest\x1b[0m"),
+	       "bold green");
+	format_clear(&f);
+	FORMAT(&f, "{}test{}", BOLD_BRIGHT_RED, RESET);
+	ASSERT(!strcmp(format_to_string(&f), "\x1b[1;91mtest\x1b[0m"),
+	       "bold bright red");
+	format_clear(&f);
+
+	format_clear(&f);
 }
 
 Test(colors2) {
@@ -153,6 +163,12 @@ Test(colors2) {
 	format_clear(&f);
 	FORMAT(&f, "{}test{}", BOLD_BLUE, RESET);
 	ASSERT(!strcmp(format_to_string(&f), "test"), "bold blue");
+	format_clear(&f);
+	FORMAT(&f, "{}test{}", BOLD_GREEN, RESET);
+	ASSERT(!strcmp(format_to_string(&f), "test"), "bold green");
+	format_clear(&f);
+	FORMAT(&f, "{}test{}", BOLD_BRIGHT_RED, RESET);
+	ASSERT(!strcmp(format_to_string(&f), "test"), "bold bright red");
 	format_clear(&f);
 
 	_debug_remove_env("NO_COLOR", "1");

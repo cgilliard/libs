@@ -812,6 +812,33 @@ Test(otherparsing) {
 	format_clear(&f);
 }
 
+Test(has_precision1) {
+	/*
+		static i32 format_parse_spec(const char *p, FormatSpec *spec) {
+		FormatSpec ret = {.t = FormatSpecTypeNone, .total_bytes = 2};
+		p++;
+		while (*p) {
+			if (*p == '.') {
+				if (ret.has_precision) return -EPROTO;
+				ret.has_precision = true;
+				p++;
+				if (*p > '9' || *p < '0') return -EPROTO;
+				ret.precision = *p - '0';
+				ret.total_bytes += 2;
+				p++;
+			} else if (*p == '{') {
+				if (ret.has_precision || ret.has_width ||
+				    ret.t != FormatSpecTypeNone)
+					return -EPROTO;
+				ret.t = FormatSpecTypeEscapeBracketLeft;
+				break;
+			} else if (*p == ':') {
+				*/
+	FormatSpec spec;
+	ASSERT_EQ(format_parse_spec("{.1{", &spec), -EPROTO, "has_prec");
+	ASSERT_EQ(format_parse_spec("{:1{", &spec), -EPROTO, "has_width");
+}
+
 #endif /* TEST */
 /* GCOVR_EXCL_STOP */
 
