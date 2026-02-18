@@ -510,6 +510,69 @@ Test(rbtree3) {
 	       "rem err");
 }
 
+Test(rbtree4) {
+#define COUNT 100000
+	RbTree tree = RBTREE_INIT;
+	TestRbTreeNode nodes[COUNT * 2];
+	u64 i;
+	u64 seed = cycle_counter();
+	for (i = 0; i < COUNT * 2; i++) {
+		u64 value = splitmix64(&seed);
+		nodes[i].value = value;
+	}
+
+	for (i = 0; i < COUNT; i++) {
+		ASSERT(
+		    !rbtree_put(&tree, (RbTreeNode *)&nodes[i], test_rbsearch),
+		    "rbtree put {}", i);
+	}
+	validate_rbtree(&tree);
+	ASSERT(tree.root, "not empty");
+
+	for (i = COUNT / 2; i < COUNT; i++) {
+		ASSERT(rbtree_remove(&tree, (RbTreeNode *)&nodes[i],
+				     test_rbsearch),
+		       "found {}", i);
+		ASSERT(!rbtree_remove(&tree, (RbTreeNode *)&nodes[i],
+				      test_rbsearch),
+		       "found {}", i);
+	}
+	validate_rbtree(&tree);
+	ASSERT(tree.root, "not empty");
+
+	for (i = COUNT; i < COUNT * 2; i++) {
+		ASSERT(
+		    !rbtree_put(&tree, (RbTreeNode *)&nodes[i], test_rbsearch),
+		    "rbtree put {}", i);
+	}
+	validate_rbtree(&tree);
+	ASSERT(tree.root, "not empty");
+
+	for (i = 0; i < COUNT / 2; i++) {
+		ASSERT(rbtree_remove(&tree, (RbTreeNode *)&nodes[i],
+				     test_rbsearch),
+		       "found {}", i);
+		ASSERT(!rbtree_remove(&tree, (RbTreeNode *)&nodes[i],
+				      test_rbsearch),
+		       "found {}", i);
+	}
+	validate_rbtree(&tree);
+	ASSERT(tree.root, "not empty");
+
+	for (i = COUNT; i < COUNT * 2; i++) {
+		ASSERT(rbtree_remove(&tree, (RbTreeNode *)&nodes[i],
+				     test_rbsearch),
+		       "found {}", i);
+		ASSERT(!rbtree_remove(&tree, (RbTreeNode *)&nodes[i],
+				      test_rbsearch),
+		       "found {}", i);
+	}
+
+	validate_rbtree(&tree);
+	ASSERT(!tree.root, "empty");
+#undef COUNT
+}
+
 #endif /* TEST */
 /* GCOVR_EXCL_STOP */
 
