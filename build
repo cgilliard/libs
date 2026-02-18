@@ -89,15 +89,23 @@ case "$ARCH" in
 	if [ "${VALGRIND}" = "1" ]; then
 	    ARCH_FLAGS="-march=haswell"
 	else
-            if grep -q " vaes " /proc/cpuinfo; then
-                ARCH_FLAGS="-march=haswell -mavx2 -mvaes"
+	    if grep -q " avx2 " /proc/cpuinfo; then
+                if grep -q " vaes " /proc/cpuinfo; then
+                    ARCH_FLAGS="-march=haswell -mavx2 -mvaes"
+	        else
+                    ARCH_FLAGS="-march=haswell -mavx2 -maes"
+	        fi
 	    else
-		ARCH_FLAGS="-march=haswell -mavx2 -maes"
+                ARCH_FLAGS=""
 	    fi
 	fi
         ;;
     aarch64|arm64|armv8*)
-        ARCH_FLAGS="-march=armv8-a+crypto -mno-outline-atomics"
+        if grep -q " Features.*:.*\(aes\|crypto\) " /proc/cpuinfo; then
+            ARCH_FLAGS="-march=armv8-a+crypto -mno-outline-atomics"
+        else
+            ARCH_FLAGS="-march=armv8-a -mno-outline-atomics"
+        fi
         ;;
     *)
         ARCH_FLAGS="-march=native"
