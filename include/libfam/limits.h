@@ -110,6 +110,11 @@
 
 #endif /* _LIMITS_H */
 
+#ifdef LIMITS_IMPL
+#ifndef LIMITS_IMPL_GUARD
+#define LIMITS_IMPL_GUARD
+
+/* GCOVR_EXCL_START */
 #ifdef TEST
 #include <libfam/test.h>
 
@@ -177,3 +182,7 @@ Test(limits) {
 }
 
 #endif /* TEST */
+/* GCOVR_EXCL_STOP */
+
+#endif /* LIMITS_IMPL_GUARD */
+#endif /* LIMITS_IMPL */
