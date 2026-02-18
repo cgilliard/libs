@@ -239,3 +239,4 @@ elif [ "${INSTALL_LIB}" = "1" ]; then
 	cp -rp ${LIB_DIR}/libfam.so /usr/lib || exit 1;
 fi
 
+
