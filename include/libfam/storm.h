@@ -44,6 +44,7 @@ void storm_xcrypt_buffer(StormContext *s, u8 buf[32]);
 #ifndef STORM_IMPL_GUARD
 #define STORM_IMPL_GUARD
 
+#include <libfam/aesenc.h>
 #include <libfam/string.h>
 #include <libfam/utils.h>
 
@@ -82,6 +83,110 @@ PUBLIC void storm_init(StormContext *ctx, const u8 key[32]) {
 	memset(st->counter, 0, 32);
 }
 
+PUBLIC void storm_next_block(StormContext *ctx, u8 buf[32]) {
+	StormContextImpl *st = (StormContextImpl *)ctx;
+	u8 x[32], y[32];
+
+	for (int i = 0; i < 32; i++) x[i] = st->state[i] ^ buf[i];
+	aesenc256(x, st->key0);
+	memcpy(y, x, 32);
+	for (int i = 0; i < 16; ++i) {
+		st->state[i] = y[i + 16];
+		st->state[i + 16] = y[i] ^ y[i + 16];
+	}
+	aesenc256(y, st->key1);
+	memcpy(buf, y, 32);
+	for (int i = 0; i < 32; i++) x[i] = st->state[i] ^ buf[i];
+	aesenc256(x, st->key2);
+	aesenc256(x, st->key3);
+	memcpy(buf, x, 32);
+}
+PUBLIC void storm_xcrypt_buffer(StormContext *ctx, u8 buf[32]) {
+	StormContextImpl *st = (StormContextImpl *)ctx;
+	u8 block[32];
+	memcpy(block, st->counter, 32);
+	storm_next_block(ctx, block);
+	for (int i = 0; i < 32; i++) buf[i] ^= block[i];
+	u64 *counter = (u64 *)st->counter;
+	++counter[0];
+	++counter[1];
+	++counter[2];
+	++counter[3];
+}
+
+/* GCOVR_EXCL_START */
+#ifdef TEST
+
+#include <libfam/storm_vectors.h>
+#include <libfam/test.h>
+
+Test(storm_vectors) {
+	StormContext ctx;
+	for (u32 i = 0; i < sizeof(storm_vectors) / sizeof(storm_vectors[0]);
+	     i++) {
+		storm_init(&ctx, storm_vectors[i].key);
+		for (u32 j = 0; j < sizeof(storm_vectors[i].input) /
+					sizeof(storm_vectors[i].input[0]);
+		     j++) {
+			__attribute__((aligned(32))) u8 tmp[32];
+			__builtin_memcpy(tmp, storm_vectors[i].input[j], 32);
+			storm_next_block(&ctx, tmp);
+			i32 res = memcmp(tmp, storm_vectors[i].expected[j], 32);
+			if (res) println("i={},j={}", i, j);
+			ASSERT(!res, "vector");
+		}
+	}
+}
+
+Test(storm_cipher) {
+	StormContext ctx;
+	__attribute__((aligned(32))) const u8 SEED[32] = {1, 2, 3};
+	__attribute__((aligned(32))) u8 buffer1[32] = {0};
+	__attribute__((aligned(32))) u8 buffer2[32] = {0};
+	__attribute__((aligned(32))) u8 buffer3[32] = {0};
+	__attribute__((aligned(32))) u8 buffer4[32] = {0};
+	__attribute__((aligned(32))) u8 buffer5[32] = {0};
+
+	storm_init(&ctx, SEED);
+	__builtin_strcpy(buffer1, "test1");
+	storm_xcrypt_buffer(&ctx, buffer1);
+	__builtin_strcpy(buffer2, "test2");
+	storm_xcrypt_buffer(&ctx, buffer2);
+	__builtin_strcpy(buffer3, "blahblah");
+	storm_xcrypt_buffer(&ctx, buffer3);
+	__builtin_strcpy(buffer4, "ok");
+	storm_xcrypt_buffer(&ctx, buffer4);
+	__builtin_strcpy(buffer5, "x");
+	storm_xcrypt_buffer(&ctx, buffer5);
+
+	ASSERT(memcmp(buffer1, "test1", 5), "ne1");
+	ASSERT(memcmp(buffer2, "test2", 5), "ne2");
+	ASSERT(memcmp(buffer3, "blahblah", 8), "ne3");
+	ASSERT(memcmp(buffer4, "ok", 2), "ne4");
+	ASSERT(memcmp(buffer5, "x", 1), "ne5");
+
+	StormContext ctx2;
+	storm_init(&ctx2, SEED);
+
+	storm_xcrypt_buffer(&ctx2, buffer1);
+	ASSERT(!memcmp(buffer1, "test1", 5), "eq1");
+	storm_xcrypt_buffer(&ctx2, buffer2);
+	ASSERT(!memcmp(buffer2, "test2", 5), "eq2");
+
+	storm_xcrypt_buffer(&ctx2, buffer3);
+	ASSERT(!memcmp(buffer3, "blahblah", 8), "eq3");
+
+	storm_xcrypt_buffer(&ctx2, buffer4);
+	ASSERT(!memcmp(buffer4, "ok", 2), "eq4");
+
+	storm_xcrypt_buffer(&ctx2, buffer5);
+	ASSERT(!memcmp(buffer5, "x", 1), "eq5");
+}
+
+#endif /* TEST */
+/* GCOVR_EXCL_STOP */
+
+/*
 #ifdef __VAES__
 static inline void aesenc256avx(void *data, const void *key) {
 	__asm__ __volatile__(
@@ -96,7 +201,8 @@ static inline void aesenc256avx(void *data, const void *key) {
 	    : [data] "r"(data), [key] "r"(key)
 	    : "xmm0", "xmm1", "xmm2", "ymm0", "ymm1", "memory");
 }
-#endif /* __VAES__ */
+#endif
+*/
 
 #endif /* STORM_IMPL_GUARD */
 #endif /* STORM_IMPL */

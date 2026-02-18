@@ -51,6 +51,7 @@ __asm__(
 #define SYSEXT_IMPL
 #define RBTREE_IMPL
 #define ERRNO_IMPL
+#define STORM_IMPL
 #endif
 
 #include <libfam/aesenc.h>
@@ -58,6 +59,7 @@ __asm__(
 #include <libfam/colors.h>
 #include <libfam/env.h>
 #include <libfam/format.h>
+#include <libfam/storm.h>
 
 i32 cur_tests = 0;
 i32 exe_test = 0;
