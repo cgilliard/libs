@@ -17,6 +17,8 @@ static __attribute__((unused)) const char *__assertion_msg =
     "\nAssertion failed in test";
 const char *get_active(void);
 
+/* GCOVR_EXCL_START */
+
 #define Test(name)                                                  \
 	void __test_##name(void);                                   \
 	void __add_test_##name(void);                               \
@@ -44,5 +46,7 @@ const char *get_active(void);
 			      RESET, get_active(), format_to_string(&fmt));    \
 		}                                                              \
 	})
+
+/* GCOVR_EXCL_STOP */
 
 #endif /* _TEST_H */

@@ -89,6 +89,9 @@ i32 getsockname(i32 sockfd, struct sockaddr *addr, u64 *addrlen);
 static inline i64 syscall(i64 sysno, i64 a0, i64 a1, i64 a2, i64 a3, i64 a4,
 			  i64 a5) {
 	i64 result = 0;
+#ifdef TEST
+	if (_debug_syscall_return) return _debug_syscall_return;
+#endif /* TEST */
 #ifdef __aarch64__
 	__asm__ volatile(
 	    "mov x8, %1\n"

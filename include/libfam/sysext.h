@@ -67,6 +67,7 @@ PUBLIC i64 pwrite(i32 fd, const void *buf, u64 len, u64 offset) {
 				   .off = offset,
 				   .user_data = 1};
 #ifdef TEST
+	if (_debug_pwrite_return) return _debug_pwrite_return;
 	if (_debug_no_write) return len;
 #endif /* TEST */
 	if ((result = global_sync_init()) < 0) return result;
@@ -292,7 +293,7 @@ PUBLIC i64 write_num(i32 fd, i64 num) {
 			len = sizeof(min_str) - 1;
 			written = pwrite(fd, min_str, len, -1);
 			if (written < 0) return written;
-			if ((u64)written != len) return written;
+			if ((u64)written != len) return -EIO;
 			return 0;
 		}
 		num = -num;
@@ -316,7 +317,9 @@ PUBLIC i64 write_num(i32 fd, i64 num) {
 
 PUBLIC i32 fork(void) {
 	i32 ret = clone(17, 0);
+	/* GCOVR_EXCL_START */
 	if (!ret) __global_sync = NULL;
+	/* GCOVR_EXCL_STOP */
 	return ret;
 }
 
@@ -471,6 +474,82 @@ Test(write_num) {
 	close(fd);
 	unlink(PATH);
 #undef PATH
+}
+
+Test(sysext_failures) {
+	char buf[2];
+	__global_sync = NULL;
+	_debug_alloc_failure = 0;
+	ASSERT(pwrite(2, "1\n", 2, -1) < 0);
+	_debug_alloc_failure = 0;
+	ASSERT(nsleep(1) < 0);
+	_debug_alloc_failure = 0;
+	unlink(NULL);
+	_debug_alloc_failure = 0;
+	statx(NULL, NULL);
+	_debug_alloc_failure = 0;
+	waitpid(0);
+	ASSERT(!__global_sync, "gs");
+	_debug_alloc_failure = 0;
+	ASSERT(usleep(1) < 0);
+	_debug_alloc_failure = 0;
+	ASSERT(pread(-1, buf, 2, 0) < 0);
+	ASSERT(usleep(U64_MAX) < 0);
+	_debug_alloc_failure = 0;
+	fsync(0);
+	ASSERT(!__global_sync, "gs");
+	_debug_alloc_failure = 0;
+	fdatasync(0);
+	ASSERT(!__global_sync, "gs");
+	_debug_alloc_failure = 0;
+	open("", 0, 0);
+	ASSERT(!__global_sync, "gs");
+	_debug_alloc_failure = 0;
+	fallocate(0, 0);
+	ASSERT(!__global_sync, "gs");
+	_debug_alloc_failure = 0;
+	fstatx(0, NULL);
+	ASSERT(!__global_sync, "gs");
+	_debug_alloc_failure = 0;
+	socket(0, 0, 0);
+	ASSERT(!__global_sync, "gs");
+	_debug_alloc_failure = 0;
+	sendmsg(0, NULL, 0);
+	ASSERT(!__global_sync, "gs");
+	_debug_alloc_failure = 0;
+	recvmsg(0, NULL, 0);
+	ASSERT(!__global_sync, "gs");
+	_debug_alloc_failure = 0;
+	bind(0, NULL, 0);
+	ASSERT(!__global_sync, "gs");
+	_debug_alloc_failure = 0;
+	ASSERT(!fmap(0, 100, 0));
+	_debug_alloc_failure = 0;
+	ASSERT(!smap(100));
+	_debug_alloc_failure = I64_MAX;
+
+	ASSERT(write_num(-1, 0) < 0);
+
+	_debug_syscall_return = -1;
+	ASSERT(micros() < 0);
+
+	_debug_syscall_return = -47;
+	ASSERT_EQ(write_num(2, (i64)(-0x7FFFFFFFFFFFFFFF - 1)), -47);
+	_debug_syscall_return = 0;
+
+	_debug_pwrite_return = 1;
+	i32 res = write_num(2, (i64)(-0x7FFFFFFFFFFFFFFF - 1));
+	_debug_pwrite_return = 0;
+	ASSERT_EQ(res, -EIO, "case 1 expected {}, found {}", -EIO, res);
+
+	_debug_syscall_return = -47;
+	ASSERT_EQ(write_num(2, (i64)(-0x5FFFFFFFFFFFFFFF - 1)), -47, "-47");
+	_debug_syscall_return = 0;
+
+	_debug_pwrite_return = 1;
+	res = write_num(2, (i64)(-0x5FFFFFFFFFFFFFFF - 1));
+	_debug_pwrite_return = 0;
+	ASSERT_EQ(res, -EIO, "case 2 expected {}, found {}", -EIO, res);
 }
 
 #endif /* TEST */

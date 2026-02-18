@@ -176,6 +176,7 @@ Test(syncfail) {
 
 	_debug_io_uring_enter2_fail = false;
 	sync_destroy(s);
+	sync_destroy(NULL);
 }
 
 #endif /* TEST */

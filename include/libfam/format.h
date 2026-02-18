@@ -200,6 +200,7 @@ cc -DFORMAT_ALL_IMPL test.c -o test
 			_to_write__ -= _result__;                    \
 		}                                                    \
 	})
+
 #define println(fmt, ...)                                                   \
 	({                                                                  \
 		const char *_tmp__;                                         \

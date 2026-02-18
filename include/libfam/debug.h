@@ -13,6 +13,8 @@ extern bool _debug_no_exit;
 extern bool _debug_proc_format_all;
 extern bool _debug_io_uring_setup_fail;
 extern bool _debug_io_uring_enter2_fail;
+extern i64 _debug_syscall_return;
+extern i64 _debug_pwrite_return;
 
 #endif /* _DEBUG_H */
 
@@ -31,6 +33,8 @@ PUBLIC bool _debug_no_exit = false;
 PUBLIC bool _debug_proc_format_all = false;
 PUBLIC bool _debug_io_uring_setup_fail = false;
 PUBLIC bool _debug_io_uring_enter2_fail = false;
+PUBLIC i64 _debug_syscall_return = 0;
+PUBLIC i64 _debug_pwrite_return = 0;
 
 #endif /* DEBUG_IMPL_GUARD */
 #endif /* DEBUG_IMPL */
