@@ -513,9 +513,12 @@ Test(rbtree3) {
 Test(rbtree4) {
 #define COUNT 100000
 	RbTree tree = RBTREE_INIT;
-	TestRbTreeNode nodes[COUNT * 2];
+	TestRbTreeNode *nodes;
 	u64 i;
 	u64 seed = cycle_counter();
+
+	nodes = map(sizeof(TestRbTreeNode) * COUNT * 2);
+
 	for (i = 0; i < COUNT * 2; i++) {
 		u64 value = splitmix64(&seed);
 		nodes[i].value = value;
@@ -570,6 +573,8 @@ Test(rbtree4) {
 
 	validate_rbtree(&tree);
 	ASSERT(!tree.root, "empty");
+
+	munmap(nodes, sizeof(TestRbTreeNode) * COUNT * 2);
 #undef COUNT
 }
 
