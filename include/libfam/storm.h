@@ -130,6 +130,48 @@ PUBLIC void storm_xcrypt_buffer(StormContext *ctx_void, u8 buf[32]) {
 	    : [ctx] "r"(ctx), [buf] "r"(buf)
 	    : "ymm0", "ymm1", "xmm0", "xmm1", "xmm2", "memory");
 }
+#elif defined(__AES__)
+PUBLIC void storm_next_block(StormContext *ctx_void, u8 buf[32]) {
+	StormContextImpl *ctx = (StormContextImpl *)ctx_void;
+	__asm__ __volatile__(
+	    "vmovdqa     (%[ctx]),      %%ymm0           \n\t"
+	    "vpxor       (%[buf]),      %%ymm0, %%ymm0   \n\t"
+	    "vextracti128 $0x1,         %%ymm0, %%xmm1   \n\t"
+	    "vaesenc     0x20(%[ctx]),  %%xmm0, %%xmm0   \n\t"
+	    "vaesenc     0x30(%[ctx]),  %%xmm1, %%xmm1   \n\t"
+	    "vpxor       %%xmm0,        %%xmm1, %%xmm2   \n\t"
+	    "vmovdqa     %%xmm1,        (%[ctx])         \n\t"
+	    "vmovdqa     %%xmm2,        0x10(%[ctx])     \n\t"
+	    "vaesenc     0x40(%[ctx]),  %%xmm0, %%xmm0   \n\t"
+	    "vaesenc     0x50(%[ctx]),  %%xmm1, %%xmm3   \n\t"
+	    "vpxor       %%xmm1,        %%xmm0, %%xmm0   \n\t"
+	    "vpxor       %%xmm2,        %%xmm3, %%xmm1   \n\t"
+	    "vaesenc     0x60(%[ctx]),  %%xmm0, %%xmm0   \n\t"
+	    "vaesenc     0x70(%[ctx]),  %%xmm1, %%xmm1   \n\t"
+	    "vaesenc     0x80(%[ctx]),  %%xmm0, %%xmm0   \n\t"
+	    "vaesenc     0x90(%[ctx]),  %%xmm1, %%xmm1   \n\t"
+	    "vmovdqa     %%xmm0,        (%[buf])         \n\t"
+	    "vmovdqa     %%xmm1,        0x10(%[buf])     \n\t"
+	    "vzeroupper                                  \n\t"
+
+	    :
+	    : [ctx] "r"(ctx), [buf] "r"(buf)
+	    : "ymm0", "ymm1", "xmm0", "xmm1", "xmm2", "xmm3", "memory");
+}
+
+PUBLIC void storm_xcrypt_buffer(StormContext *ctx, u8 buf[32]) {
+	StormContextImpl *st = (StormContextImpl *)ctx;
+	u8 block[32];
+	memcpy(block, st->counter, 32);
+	storm_next_block(ctx, block);
+	for (int i = 0; i < 32; i++) buf[i] ^= block[i];
+	u64 *counter = (u64 *)st->counter;
+	++counter[0];
+	++counter[1];
+	++counter[2];
+	++counter[3];
+}
+
 #elif defined(__ARM_NEON__) || defined(__ARM_NEON)
 
 PUBLIC void storm_next_block(StormContext *ctx, u8 buf[32]) {
