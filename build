@@ -87,7 +87,7 @@ ARCH=$(uname -m 2>/dev/null || echo unknown)
 case "$ARCH" in
     x86_64|amd64)
 	if [ "${VALGRIND}" = "1" ]; then
-	    ARCH_FLAGS="-march=haswell"
+	    ARCH_FLAGS="-march=haswell -maes"
 	else
 	    if grep -q " avx2 " /proc/cpuinfo; then
                 if grep -q " vaes " /proc/cpuinfo; then
