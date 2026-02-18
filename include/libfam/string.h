@@ -216,20 +216,21 @@ PUBLIC u8 f64_to_string(char buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
 }
 
 PUBLIC i32 string_to_u128(const char *buf, u64 len, u128 *result) {
+	u128 res = 0;
 	u64 i = 0;
 	u8 c;
 
-	*result = 0;
-	if (!buf || !len) return -EINVAL;
+	if (!buf || !len || !result) return -EINVAL;
 	while (i < len && (buf[i] == ' ' || buf[i] == '\t')) i++;
 	if (i == len) return -EINVAL;
 	while (i < len) {
 		c = buf[i];
 		if (c < '0' || c > '9') return -EINVAL;
-		if (*result > U128_MAX / 10) return -EOVERFLOW;
-		*result = *result * 10 + (c - '0');
+		if (res > U128_MAX / 10) return -EOVERFLOW;
+		res = res * 10 + (c - '0');
 		i++;
 	}
+	*result = res;
 	return 0;
 }
 
@@ -275,7 +276,7 @@ PUBLIC u8 u128_to_string(char buf[MAX_U128_STRING_LEN], u128 value,
 			value >>= 4;
 		else if (mod_val == 10)
 			value /= 10;
-		else if (mod_val == 2)
+		else
 			value >>= 1;
 	}
 	if (commas) {
@@ -332,7 +333,7 @@ PUBLIC char *strchr(const char *s, i32 c) {
 	do
 		if (*s == c) return (const char *)s;
 	while (*s++);
-	return !c ? (const char *)s : NULL;
+	return NULL;
 }
 #pragma GCC diagnostic pop
 
@@ -378,6 +379,7 @@ Test(to_string) {
 Test(strcmp) {
 	ASSERT(strcmp("abc", "def"), "abc!=def");
 	ASSERT(!strcmp("abc", "abc"), "abc=abc");
+	ASSERT(strcmp("def", "abc"), "def!=abc");
 }
 
 Test(strncpy) {
@@ -388,6 +390,11 @@ Test(strncpy) {
 	ASSERT_EQ(x[1], 'b', "b");
 	ASSERT_EQ(x[2], 'c', "c");
 	ASSERT_EQ(x[3], 0, "\0");
+
+	strncpy(x, "xxx123", 2);
+	ASSERT(!strncmp(x, "xxc", 3), "xxc");
+	ASSERT(!strncmp(x, "xxc123", 3), "xxc2");
+	ASSERT(!strncmp(x, "xxc", 5), "xxc3");
 }
 
 Test(f64_to_string) {
@@ -537,6 +544,7 @@ Test(strstr) {
 	ASSERT_EQ(strstr(s, "def"), s + 3, "strstr1");
 	ASSERT_EQ(strstr(s, "x"), NULL, "no match");
 	ASSERT_EQ(strstr(s, "abcdefghixyz"), NULL, "no match 2");
+	ASSERT_EQ(strstr(s, "ghi"), s + 6, "strstr2");
 }
 
 Test(string_chr_cat) {
@@ -548,6 +556,48 @@ Test(string_chr_cat) {
 	strcpy(buf, "abc");
 	strcat(buf, "def");
 	ASSERT(!strcmp(buf, "abcdef"), "buf");
+}
+
+Test(other_situations) {
+	u128 result = 0;
+	i32 i;
+	char buf[1024];
+
+	ASSERT(string_to_u128("abc", 0, &result) < 0, "0 len");
+	ASSERT(string_to_u128(NULL, 1, &result) < 0, "null");
+	ASSERT(string_to_u128("123", 3, NULL) < 0, "null2");
+	string_to_u128("\t123", 4, &result);
+	ASSERT_EQ(result, 123, "123");
+	string_to_u128(" 124", 4, &result);
+	ASSERT_EQ(result, 124, "124");
+	ASSERT(string_to_u128(" ", 1, &result) < 0, "only whitespace");
+	ASSERT(string_to_u128(" 12x", 4, &result) < 0, "illegal char");
+	ASSERT(string_to_u128(" 12*", 4, &result) < 0, "illegal char2");
+
+	for (i = 0; i < 1024; i++) buf[i] = '9';
+	ASSERT(string_to_u128(buf, 1024, &result) < 0, "overflow");
+
+	i128 v = I128_MIN;
+	u8 len = i128_to_string(buf, v, Int128DisplayTypeDecimal);
+	buf[len] = 0;
+	ASSERT(!strcmp(buf, "-170141183460469231731687303715884105728"),
+	       "neg 128max");
+
+	len = i128_to_string(buf, 7, Int128DisplayTypeBinary);
+	buf[len] = 0;
+	ASSERT(!strcmp(buf, "111"), "binary");
+	len = i128_to_string(buf, 1234567890, Int128DisplayTypeCommas);
+	buf[len] = 0;
+	ASSERT(!strcmp(buf, "1,234,567,890"), "long commas");
+	len = i128_to_string(buf, 190, Int128DisplayTypeCommas);
+	ASSERT(!strcmp(buf, "190"), "short commas");
+
+	len = i128_to_string(buf, 123456789, Int128DisplayTypeCommas);
+	buf[len] = 0;
+	ASSERT(!strcmp(buf, "123,456,789"), "long commas2");
+	len = i128_to_string(buf, 12345678, Int128DisplayTypeCommas);
+	buf[len] = 0;
+	ASSERT(!strcmp(buf, "12,345,678"), "long commas3");
 }
 
 #endif /* TEST */

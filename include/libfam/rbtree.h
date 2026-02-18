@@ -488,6 +488,28 @@ Test(rbtree2) {
 	}
 }
 
+i32 test_rbsearch_rej(RbTreeNode *cur, const RbTreeNode *value,
+		      RbTreeNodePair *retval);
+
+i32 test_rbsearch_rej(RbTreeNode *cur, const RbTreeNode *value,
+		      RbTreeNodePair *retval) {
+	(void)cur;
+	(void)value;
+	(void)retval;
+	return -1;
+}
+
+Test(rbtree3) {
+	RbTree tree = RBTREE_INIT;
+	TestRbTreeNode n1 = {.value = 1};
+	rbtree_put(&tree, (RbTreeNode *)&n1, test_rbsearch);
+	ASSERT(rbtree_remove(&tree, (RbTreeNode *)&n1, test_rbsearch), "rem");
+	ASSERT(!rbtree_remove(&tree, (RbTreeNode *)&n1, test_rbsearch),
+	       "already rem");
+	ASSERT(!rbtree_remove(&tree, (RbTreeNode *)&n1, test_rbsearch_rej),
+	       "rem err");
+}
+
 #endif /* TEST */
 /* GCOVR_EXCL_STOP */
 

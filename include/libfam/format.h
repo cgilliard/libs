@@ -165,6 +165,8 @@ cc -DFORMAT_ALL_IMPL test.c -o test
 
 #pragma GCC diagnostic pop
 
+/* GCOVR_EXCL_START */
+
 #ifdef __clang__
 #define FORMAT(f, fmt, ...)                                                    \
 	({                                                                     \
@@ -238,6 +240,8 @@ cc -DFORMAT_ALL_IMPL test.c -o test
 		format_clear(&_f__);                                        \
 		exit_group(-1);                                             \
 	})
+
+/* GCOVR_EXCL_STOP */
 
 typedef struct {
 	char *buf;
@@ -740,6 +744,72 @@ Test(format_errs) {
 	format_clear(&f3);
 	format_clear(&f4);
 	format_clear(&f5);
+
+	_debug_no_exit = true;
+	_debug_no_write = true;
+	panic("1");
+	_debug_no_write = false;
+	_debug_no_exit = false;
+
+	FORMAT(&f1, "{");
+	ASSERT(!strcmp(format_to_string(&f1), "{"), "{");
+	FORMAT(&f1, "{.X.}");
+}
+
+Test(otherparsing) {
+	FormatSpec spec = {.has_precision = true, .precision = 4};
+	ASSERT_EQ(format_parse_spec("{.1:2.1}", &spec), -EPROTO,
+		  "already has formatting");
+	spec.has_precision = false;
+	ASSERT_EQ(format_parse_spec("{.", &spec), -EPROTO, "early term");
+
+	ASSERT_EQ(format_parse_spec("{:1.2:1}", &spec), -EPROTO,
+		  "already has align");
+
+	ASSERT_EQ(format_parse_spec("{.1{", &spec), -EPROTO,
+		  "shouldn't be here");
+
+	ASSERT_EQ(format_parse_spec("{:1000", &spec), -EPROTO, "out of bounds");
+
+	ASSERT_EQ(format_parse_spec("{.1cc}", &spec), -EPROTO,
+		  "shouldn't be here");
+
+	ASSERT_EQ(format_parse_spec("{.1bb}", &spec), -EPROTO,
+		  "shouldn't be here");
+
+	ASSERT_EQ(format_parse_spec("{.1xx}", &spec), -EPROTO,
+		  "shouldn't be here");
+
+	ASSERT_EQ(format_parse_spec("{.1XX}", &spec), -EPROTO,
+		  "shouldn't be here");
+
+	ASSERT_EQ(format_parse_spec("{.1nn}", &spec), -EPROTO,
+		  "shouldn't be here");
+
+	Formatter f = {0};
+	FORMAT(&f, " }} ok");
+	ASSERT(!strcmp(format_to_string(&f), " } ok"), "single bracket");
+	format_clear(&f);
+	FORMAT(&f, " } ok");
+	ASSERT(!strcmp(format_to_string(&f), " } ok"), "single bracket");
+	format_clear(&f);
+
+	char buf[20007] = {0};
+	u64 i;
+
+	for (i = 0; i < 20006; i++) buf[i] = '1';
+	ASSERT_EQ(f.pos, 0);
+	format_append(&f, buf);
+	ASSERT_EQ(f.pos, 20006);
+	format_append(&f, buf);
+	ASSERT_EQ(f.pos, 40012);
+
+	format_clear(&f);
+
+	spec.t = FormatSpecTypeChar;
+	format_proc_uint(&f, &spec, 240);
+	format_proc_int(&f, &spec, 239);
+	format_clear(&f);
 }
 
 #endif /* TEST */
