@@ -89,7 +89,13 @@ case "$ARCH" in
 	if [ "${VALGRIND}" = "1" ]; then
 	    ARCH_FLAGS="-march=haswell"
 	else
-            ARCH_FLAGS="-march=haswell -mavx2 -mvaes"
+            if grep -q " vaes " /proc/cpuinfo; then
+                echo "This build machine has VAES support"
+                ARCH_FLAGS="-march=haswell -mavx2 -mvaes"
+	    else
+		echo "This build machine does not support VAES"
+		ARCH_FLAGS="-march=haswell -mavx2 -maes"
+	    fi
 	fi
         ;;
     aarch64|arm64|armv8*)
