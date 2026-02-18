@@ -78,7 +78,7 @@ const char *SPACER =(void*)
     "------------------------------------------------------------------"
     "--------------------------";
 
-int main(int argc, char **argv, char **envp) {
+PUBLIC int main(int argc, char **argv, char **envp) {
 	i64 global_timer;
 	i32 count, test_count;
 	Arena *a = NULL;

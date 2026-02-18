@@ -440,6 +440,30 @@ Test(storm_cipher) {
 	ASSERT(!memcmp(buffer5, "x", 1), "eq5");
 }
 
+Test(storm_cipher_vector) {
+	StormContext ctx;
+	__attribute__((aligned(32))) const u8 SEED[32] = {1, 2, 3};
+	__attribute__((aligned(32))) u8 buffer1[32] = "test1";
+	__attribute__((aligned(32))) u8 buffer2[32] = "test2";
+
+	storm_init(&ctx, SEED);
+	storm_xcrypt_buffer(&ctx, buffer1);
+	storm_xcrypt_buffer(&ctx, buffer2);
+
+	u8 expected1[32] = {71,	 133, 192, 11,	194, 23,  27,  203,
+			    173, 163, 182, 59,	31,  226, 177, 116,
+			    41,	 37,  219, 150, 175, 113, 190, 203,
+			    53,	 124, 138, 254, 177, 111, 150, 212};
+
+	ASSERT(!memcmp(buffer1, expected1, 32), "expected1");
+	u8 expected2[32] = {122, 32,  132, 154, 196, 43,  248, 248,
+			    88,	 71,  69,  196, 204, 27,  199, 135,
+			    145, 59,  148, 51,	239, 220, 75,  82,
+			    111, 186, 138, 31,	242, 105, 162, 235};
+
+	ASSERT(!memcmp(buffer2, expected2, 32), "expected2");
+}
+
 #endif /* TEST */
 /* GCOVR_EXCL_STOP */
 
