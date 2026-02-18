@@ -36,6 +36,7 @@ __asm__(
 #include <libfam/test.h>
 
 #ifdef COVERAGE
+#define AESENC_IMPL
 #define LIMITS_IMPL
 #define DEBUG_IMPL
 #define FORMAT_IMPL
@@ -50,10 +51,11 @@ __asm__(
 #define SYSEXT_IMPL
 #define RBTREE_IMPL
 #define ERRNO_IMPL
-#include <libfam/colors.h>
 #endif
 
+#include <libfam/aesenc.h>
 #include <libfam/arena.h>
+#include <libfam/colors.h>
 #include <libfam/env.h>
 #include <libfam/format.h>
 

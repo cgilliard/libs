@@ -427,7 +427,7 @@ static i32 format_try_resize(Formatter *f, u64 len) {
 		void *tmp = map(to_alloc);
 		if (!tmp) return -1;
 
-		__builtin_memcpy(tmp, f->buf, f->pos);
+		memcpy(tmp, f->buf, f->pos);
 		if (f->capacity) munmap(f->buf, f->capacity);
 		f->buf = tmp;
 		f->capacity = to_alloc;
@@ -460,7 +460,7 @@ static i32 format_proc_padding(Formatter *f, const FormatSpec *spec,
 	if (spec->align == FormatAlignRight)
 		for (i = raw_bytes; i < aligned_bytes; i++)
 			f->buf[f->pos++] = ' ';
-	__builtin_memcpy(f->buf + f->pos, value, raw_bytes);
+	memcpy(f->buf + f->pos, value, raw_bytes);
 	f->pos += raw_bytes;
 	if (spec->align == FormatAlignLeft)
 		for (i = raw_bytes; i < aligned_bytes; i++)
@@ -504,7 +504,7 @@ static i32 format_proc_int(Formatter *f, const FormatSpec *spec, i128 value) {
 
 static i32 format_proc_string(Formatter *f, const FormatSpec *spec,
 			      const char *value) {
-	return format_proc_padding(f, spec, value, __builtin_strlen(value));
+	return format_proc_padding(f, spec, value, strlen(value));
 }
 
 static i32 format_proc_float(Formatter *f, const FormatSpec *spec, f64 value) {
@@ -537,7 +537,7 @@ PUBLIC i32 format_append(Formatter *f, const char *p, ...) {
 			if ((ret = format_try_resize(f, len)) < 0) {
 				goto cleanup;
 			}
-			__builtin_memcpy(f->buf + f->pos, p, len);
+			memcpy(f->buf + f->pos, p, len);
 			f->pos += len;
 			if (spec.t == FormatSpecTypeEscapeBracketRight) {
 				if ((ret = format_proc_string(f, &spec, "}")) <
@@ -584,11 +584,11 @@ PUBLIC i32 format_append(Formatter *f, const char *p, ...) {
 			}
 			p = np + spec.total_bytes;
 		} else {
-			len = __builtin_strlen(p);
+			len = strlen(p);
 			if ((ret = format_try_resize(f, len)) < 0) {
 				goto cleanup;
 			}
-			__builtin_memcpy(f->buf + f->pos, p, len);
+			memcpy(f->buf + f->pos, p, len);
 			f->pos += len;
 			break;
 		}
