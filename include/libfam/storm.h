@@ -190,7 +190,7 @@ void storm_xcrypt_buffer(StormContext *ctx_void, u8 buf[32]) {
 	    : [ctx] "r"(ctx), [buf] "r"(buf)
 	    : "ymm0", "ymm1", "xmm0", "xmm1", "xmm2", "xmm3", "memory");
 }
-#elif defined(__ARM_NEON__) || defined(__ARM_NEON)
+#elif defined(__ARM_NEON) && defined(__ARM_FEATURE_CRYPTO)
 
 PUBLIC void storm_next_block(StormContext *ctx, u8 buf[32]) {
 	__asm__ volatile(
