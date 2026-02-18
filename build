@@ -90,10 +90,8 @@ case "$ARCH" in
 	    ARCH_FLAGS="-march=haswell"
 	else
             if grep -q " vaes " /proc/cpuinfo; then
-                echo "This build machine has VAES support"
                 ARCH_FLAGS="-march=haswell -mavx2 -mvaes"
 	    else
-		echo "This build machine does not support VAES"
 		ARCH_FLAGS="-march=haswell -mavx2 -maes"
 	    fi
 	fi
