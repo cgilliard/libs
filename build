@@ -8,6 +8,7 @@ INSTALL_LIB=0;
 COVERAGE=0;
 CC="${CC:-clang}"
 CFLAGS="${CFLAGS:--O3 -fno-stack-clash-protection}"
+MARCH="${MARCH:-native}";
 VALGRIND="${VALGRIND:-0}"
 TEST_DIR=./test
 INCLUDE_DIR=include
@@ -91,9 +92,9 @@ case "$ARCH" in
 	else
 	    if grep -q " avx2 " /proc/cpuinfo; then
                 if grep -q " vaes " /proc/cpuinfo; then
-                    ARCH_FLAGS="-march=haswell -mavx2 -mvaes"
+                    ARCH_FLAGS="-march=${MARCH} -mavx2 -mvaes"
 	        else
-                    ARCH_FLAGS="-march=haswell -mavx2 -maes"
+                    ARCH_FLAGS="-march=${MARCH} -mavx2 -maes"
 	        fi
 	    else
                 ARCH_FLAGS=""
@@ -101,10 +102,10 @@ case "$ARCH" in
 	fi
         ;;
     aarch64|arm64|armv8*)
-        ARCH_FLAGS="-march=armv8-a+crypto -mno-outline-atomics"
+        ARCH_FLAGS="-march=${MARCH} -mno-outline-atomics"
         ;;
     *)
-        ARCH_FLAGS="-march=native"
+        ARCH_FLAGS="-march=${MARCH}"
         ;;
 esac
 
