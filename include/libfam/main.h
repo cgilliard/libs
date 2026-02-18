@@ -56,7 +56,6 @@ $
 #ifdef MAIN_ALL_IMPL
 #define MAIN_IMPL
 #define SYSCALL_IMPL
-
 #include <libfam/syscall.h>
 #endif /* MAIN_ALL_IMPL */
 

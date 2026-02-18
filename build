@@ -201,7 +201,9 @@ elif [ "${ALL}" = "1" ]; then
     for SRC in "$INCLUDE_DIR"/libfam/*.h; do
 	BASE=$(basename "${SRC}" .h)
         IMPL=$(echo "$BASE" | tr 'a-z' 'A-Z')_IMPL
-	IMPLS="${IMPLS}${NL}#define ${IMPL}${NL}#include <libfam/${BASE}.h>";
+	if [ "${BASE}" != "main" ]; then
+	    IMPLS="${IMPLS}${NL}#define ${IMPL}${NL}#include <libfam/${BASE}.h>";
+	fi
 	SO_FILE="${LIB_DIR}/lib${BASE}.so"
         if [ ! -e "${SO_FILE}" ] || [ "${SRC}" -nt "${SO_FILE}" ]; then
             COMMAND="${CC} \
