@@ -1,0 +1,4 @@
+#!/bin/sh
+
+export CC=gcc; ./build clean bench || exit 1;
+

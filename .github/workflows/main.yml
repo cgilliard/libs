@@ -38,6 +38,8 @@ jobs:
           - testgccvalgrind0
           - testclangvalgrind
           - testclangvalgrind0
+          - benchgcc
+          - benchclang
           - cov
     steps:
       - name: Checkout code
