@@ -521,6 +521,12 @@ Test(secure_zero) {
 	ASSERT(memcmp(buf, (u8[32]){0}, 32), "not zero");
 	secure_zero32(buf);
 	ASSERT(!memcmp(buf, (u8[32]){0}, 32), "not zero");
+
+	u32 i;
+	u8 x[100];
+	for (i = 0; i < 100; i++) x[i] = 9;
+	secure_zero(x, 100);
+	for (i = 0; i < 100; i++) ASSERT_EQ(x[i], 0);
 }
 
 Test(string_u128) {

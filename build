@@ -49,6 +49,10 @@ for arg in "$@"; do
             INSTALL_LIB=1;
 	    LIB_DIR=./target/lib
             ;;
+        *)
+	    echo "Invalid command";
+	    exit 1;
+	    ;;
     esac
 done
 
@@ -161,6 +165,7 @@ if [ "${TEST}" = "1" ]; then
     fi
 elif [ "${COVERAGE}" = "1" ]; then
 	COMMAND="gcc \
+		${ARCH_FLAGS} \
 		-O0 \
 		-g \
 		-fno-builtin \
