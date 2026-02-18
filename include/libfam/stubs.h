@@ -15,6 +15,7 @@
 
 u128 __udivti3(u128 a, u128 b);
 u128 __umodti3(u128 a, u128 b);
+u128 __udivmodti4(u128 a, u128 b, u128 *rem);
 void __stack_chk_fail(void);
 
 typedef union {
@@ -75,7 +76,7 @@ static u64 udiv128by64to64(u64 u1, u64 u0, u64 v, u64 *r) {
 	return q1 * b + q0;
 }
 
-static u128 __udivmodti4(u128 a, u128 b, u128 *rem) {
+PUBLIC u128 __udivmodti4(u128 a, u128 b, u128 *rem) {
 	const unsigned n_utword_bits = sizeof(u128) * 8;
 	utwords dividend;
 	dividend.all = a;
@@ -138,9 +139,6 @@ PUBLIC u128 __udivti3(u128 a, u128 b) { return __udivmodti4(a, b, 0); }
 #ifdef TEST
 #include <libfam/limits.h>
 #include <libfam/test.h>
-
-u128 __umodti3(u128 a, u128 b);
-u128 __udivti3(u128 a, u128 b);
 
 Test(stubs) {
 	u128 v1 = (u128)111 << 77;
