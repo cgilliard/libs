@@ -82,7 +82,11 @@ ARCH=$(uname -m 2>/dev/null || echo unknown)
 
 case "$ARCH" in
     x86_64|amd64)
-        ARCH_FLAGS="-march=haswell -mavx2 -mvaes"
+	if [ "${VALGRIND}" = "1" ]; then
+	    ARCH_FLAGS="-march=haswell"
+	else
+            ARCH_FLAGS="-march=haswell -mavx2 -mvaes"
+	fi
         ;;
     aarch64|arm64|armv8*)
         ARCH_FLAGS="-march=armv8-a+crypto -mno-outline-atomics"
