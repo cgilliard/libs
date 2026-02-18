@@ -251,13 +251,27 @@ Test(branch_conditions_div) {
 }
 
 Test(divmod) {
-#define PRIME ((u128)18446744073709551557UL)
-	u64 cc = cycle_counter();
-	u128 v128 = (u128)cc * PRIME;
-	/*
-	println("v128={}", v128);
-	*/
-#undef PRIME
+#define COUNT 1024
+	u64 i;
+	u128 q[COUNT];
+	u128 d[COUNT];
+	u128 ans[COUNT];
+	u128 mod[COUNT];
+	u64 seed = cycle_counter();
+	for (i = 0; i < COUNT; i++) {
+		u64 a = splitmix64(&seed);
+		u64 b = splitmix64(&seed);
+		q[i] = ((u128)b << 64) | a;
+	}
+	for (i = 0; i < COUNT; i++) {
+		d[i] = splitmix64(&seed);
+		ans[i] = q[i] / d[i];
+		mod[i] = q[i] % d[i];
+	}
+
+	for (i = 0; i < COUNT; i++)
+		ASSERT_EQ(q[i], ans[i] * d[i] + mod[i], "{}", i);
+#undef COUNT
 }
 
 #endif
