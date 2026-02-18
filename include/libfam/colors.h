@@ -9,14 +9,20 @@ const char *get_dimmed(void);
 const char *get_red(void);
 #define RED get_red()
 
-const char *get_bright_red(void);
-#define BRIGHT_RED get_bright_red()
-
 const char *get_bold_red(void);
 #define BOLD_RED get_bold_red()
 
+const char *get_bright_red(void);
+#define BRIGHT_RED get_bright_red()
+
+const char *get_bold_bright_red(void);
+#define BOLD_BRIGHT_RED get_bold_bright_red()
+
 const char *get_green(void);
 #define GREEN get_green()
+
+const char *get_bold_green(void);
+#define BOLD_GREEN get_bold_green()
 
 const char *get_yellow(void);
 #define YELLOW get_yellow()
@@ -50,8 +56,14 @@ static i32 no_color(void) { return getenv("NO_COLOR") != NULL; }
 PUBLIC const char *get_dimmed(void) { return no_color() ? "" : "\x1b[2m"; }
 PUBLIC const char *get_red(void) { return no_color() ? "" : "\x1b[31m"; }
 PUBLIC const char *get_bright_red(void) { return no_color() ? "" : "\x1b[91m"; }
+PUBLIC const char *get_bold_bright_red(void) {
+	return no_color() ? "" : "\x1b[1;91m";
+}
 PUBLIC const char *get_bold_red(void) { return no_color() ? "" : "\x1b[1;31m"; }
 PUBLIC const char *get_green(void) { return no_color() ? "" : "\x1b[32m"; }
+PUBLIC const char *get_bold_green(void) {
+	return no_color() ? "" : "\x1b[1;32m";
+}
 PUBLIC const char *get_yellow(void) { return no_color() ? "" : "\x1b[33m"; }
 PUBLIC const char *get_cyan(void) { return no_color() ? "" : "\x1b[36m"; }
 PUBLIC const char *get_magenta(void) { return no_color() ? "" : "\x1b[35m"; }
@@ -148,7 +160,7 @@ Test(colors2) {
 }
 
 #endif /* TEST */
-/* GCOVR_EXCL_STOP */
+       /* GCOVR_EXCL_STOP */
 
 #endif /* COLORS_IMPL_GUARD */
 #endif /* COLORS_IMPL */

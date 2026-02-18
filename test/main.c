@@ -110,16 +110,16 @@ int main(int argc, char **argv, char **envp) {
 	global_timer = micros() - global_timer;
 	println("{}", SPACER);
 	if (global_timer < 1000)
-		println("{}Success!{} {} {}tests passed!{} {}[{}µs]{}", GREEN,
-			RESET, cur_tests, BOLD_BLUE, RESET, GREEN, global_timer,
-			RESET);
+		println("{}Success!{} {} {}tests passed!{} {}[{}µs]{}",
+			BOLD_GREEN, RESET, cur_tests, BOLD_BLUE, RESET, GREEN,
+			global_timer, RESET);
 	else if (global_timer < 1000000)
 		println("{}Success!{} {} {}tests passed!{} {}[{:.2}ms]{}",
-			GREEN, RESET, cur_tests, BOLD_BLUE, RESET, YELLOW,
+			BOLD_GREEN, RESET, cur_tests, BOLD_BLUE, RESET, YELLOW,
 			(f64)global_timer / 1000.0, RESET);
 	else
-		println("{}Success!{} {} {}tests passed!{} {}[{:.2}s]{}", GREEN,
-			RESET, cur_tests, BOLD_BLUE, RESET, RED,
+		println("{}Success!{} {} {}tests passed!{} {}[{:.2}s]{}",
+			BOLD_GREEN, RESET, cur_tests, BOLD_BLUE, RESET, RED,
 			(f64)global_timer / 1000000.0, RESET);
 
 #ifndef COVERAGE
