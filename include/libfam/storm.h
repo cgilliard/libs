@@ -130,6 +130,106 @@ PUBLIC void storm_xcrypt_buffer(StormContext *ctx_void, u8 buf[32]) {
 	    : [ctx] "r"(ctx), [buf] "r"(buf)
 	    : "ymm0", "ymm1", "xmm0", "xmm1", "xmm2", "memory");
 }
+#elif defined(__ARM_NEON__) || defined(__ARM_NEON)
+
+PUBLIC void storm_next_block(StormContext *ctx, u8 buf[32]) {
+	__asm__ volatile(
+	    "ldp     q0, q3, [%1]             \n"
+	    "ldp     q1, q2, [%0]             \n"
+	    "eor     v4.16b, v0.16b, v1.16b   \n"
+	    "eor     v5.16b, v3.16b, v2.16b   \n"
+	    "aese    v1.16b, v0.16b           \n"
+	    "aesmc   v1.16b, v1.16b           \n"
+	    "aese    v2.16b, v3.16b           \n"
+	    "aesmc   v2.16b, v2.16b           \n"
+	    "stp     q4, q5, [%1]             \n"
+	    "ldp     q0, q3, [%0, #32]        \n"
+	    "eor     v4.16b, v1.16b, v0.16b   \n"
+	    "eor     v5.16b, v2.16b, v3.16b   \n"
+	    "aese    v1.16b, v0.16b           \n"
+	    "aesmc   v1.16b, v1.16b           \n"
+	    "aese    v2.16b, v3.16b           \n"
+	    "aesmc   v2.16b, v2.16b           \n"
+	    "eor     v6.16b, v5.16b, v4.16b   \n"
+	    "stp     q5, q6, [%0]             \n"
+	    "stp     q4, q5, [%1]             \n"
+	    "ldp     q0, q3, [%0, #64]        \n"
+	    "eor     v0.16b, v1.16b, v0.16b   \n"
+	    "eor     v1.16b, v2.16b, v3.16b   \n"
+	    "stp     q0, q1, [%1]             \n"
+	    "ldp     q2, q3, [%0]             \n"
+	    "eor     v4.16b, v2.16b, v0.16b   \n"
+	    "eor     v5.16b, v3.16b, v1.16b   \n"
+	    "aese    v2.16b, v0.16b           \n"
+	    "aesmc   v2.16b, v2.16b           \n"
+	    "aese    v3.16b, v1.16b           \n"
+	    "aesmc   v3.16b, v3.16b           \n"
+	    "stp     q4, q5, [%1]             \n"
+	    "ldp     q0, q1, [%0, #96]        \n"
+	    "eor     v4.16b, v2.16b, v0.16b   \n"
+	    "eor     v5.16b, v3.16b, v1.16b   \n"
+	    "aese    v2.16b, v0.16b           \n"
+	    "aesmc   v2.16b, v2.16b           \n"
+	    "aese    v3.16b, v1.16b           \n"
+	    "aesmc   v3.16b, v3.16b           \n"
+	    "stp     q4, q5, [%1]             \n"
+	    "ldp     q0, q1, [%0, #128]       \n"
+	    "eor     v0.16b, v2.16b, v0.16b   \n"
+	    "eor     v1.16b, v3.16b, v1.16b   \n"
+	    "stp     q0, q1, [%1]             \n"
+	    :
+	    : "r"(ctx), "r"(buf)
+	    : "memory", "v0", "v1", "v2", "v3", "v4", "v5", "v6");
+}
+
+PUBLIC void storm_xcrypt_buffer(StormContext *ctx, u8 buf[32]) {
+	__asm__ volatile(
+	    "ldp     q2, q3, [%0]             \n"
+	    "mov     w8, #0x1                 \n"
+	    "ldp     q1, q0, [%0, #160]       \n"
+	    "ldr     q16, [%0, #144]          \n"
+	    "ldp     q4, q5, [%0, #32]        \n"
+	    "aese    v2.16b, v1.16b           \n"
+	    "aesmc   v2.16b, v2.16b           \n"
+	    "aese    v3.16b, v0.16b           \n"
+	    "aesmc   v3.16b, v3.16b           \n"
+	    "eor     v6.16b, v2.16b, v4.16b   \n"
+	    "aese    v2.16b, v4.16b           \n"
+	    "aesmc   v2.16b, v2.16b           \n"
+	    "eor     v7.16b, v3.16b, v5.16b   \n"
+	    "aese    v3.16b, v5.16b           \n"
+	    "aesmc   v3.16b, v3.16b           \n"
+	    "ldp     q4, q5, [%0, #64]        \n"
+	    "eor     v6.16b, v6.16b, v7.16b   \n"
+	    "eor     v2.16b, v2.16b, v4.16b   \n"
+	    "eor     v3.16b, v3.16b, v5.16b   \n"
+	    "stp     q7, q6, [%0]             \n"
+	    "aese    v2.16b, v7.16b           \n"
+	    "aesmc   v2.16b, v2.16b           \n"
+	    "aese    v3.16b, v6.16b           \n"
+	    "aesmc   v3.16b, v3.16b           \n"
+	    "ldp     q5, q17, [%1]            \n"
+	    "ldp     q7, q4, [%0, #112]       \n"
+	    "ldr     q6, [%0, #96]            \n"
+	    "aese    v2.16b, v6.16b           \n"
+	    "aesmc   v2.16b, v2.16b           \n"
+	    "dup     v6.2d, x8                \n"
+	    "eor     v4.16b, v4.16b, v5.16b   \n"
+	    "aese    v3.16b, v7.16b           \n"
+	    "aesmc   v3.16b, v3.16b           \n"
+	    "eor     v5.16b, v16.16b, v17.16b \n"
+	    "add     v1.2d, v1.2d, v6.2d      \n"
+	    "add     v0.2d, v0.2d, v6.2d      \n"
+	    "eor     v2.16b, v2.16b, v4.16b   \n"
+	    "eor     v3.16b, v3.16b, v5.16b   \n"
+	    "stp     q2, q3, [%1]             \n"
+	    "stp     q1, q0, [%0, #160]       \n"
+	    :
+	    : "r"(ctx), "r"(buf)
+	    : "memory", "v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v16",
+	      "v17", "w8", "x8");
+}
+
 #else
 PUBLIC void storm_next_block(StormContext *ctx, u8 buf[32]) {
 	StormContextImpl *st = (StormContextImpl *)ctx;
