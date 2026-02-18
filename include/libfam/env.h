@@ -104,7 +104,7 @@ PUBLIC i32 init_environ(char **envp, Arena *a) {
 		EnvNode *node;
 
 		while (*itt && (*(itt++) != '=')) key_len++;
-		value = *itt ? itt + 1 : NULL;
+		value = *itt ? itt : NULL;
 		node = arena_alloc(a, sizeof(EnvNode));
 		if (!node) return -ENOMEM;
 		node->key = key;
@@ -138,7 +138,7 @@ PUBLIC void _debug_remove_env(const char *key, char *value) {
 Test(getenv) {
 	char *shell = getenv("SHELL");
 	ASSERT(shell);
-	ASSERT(!strncmp(shell, "bin", 3));
+	ASSERT(!strncmp(shell, "/bin", 4));
 }
 
 Test(test_special_cases) {

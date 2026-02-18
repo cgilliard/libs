@@ -87,7 +87,12 @@ int main(int argc, char **argv, char **envp) {
 
 	global_timer = micros();
 	for (exe_test = 0; exe_test < cur_tests; exe_test++) {
+		char *filter = getenv("TEST_FILTER");
 		i64 timer = 0;
+		if (filter && strcmp(filter, "*") &&
+		    strcmp(filter, tests[exe_test].name))
+			continue;
+
 		print("{}Running test{} {} ({}{}{})", YELLOW, RESET,
 		      ++test_count, DIMMED, tests[exe_test].name, RESET);
 		timer = micros();

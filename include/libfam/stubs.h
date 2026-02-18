@@ -25,7 +25,7 @@ typedef union {
 	} s;
 } utwords;
 
-static inline u64 udiv128by64to64(u64 u1, u64 u0, u64 v, u64 *r) {
+static u64 udiv128by64to64(u64 u1, u64 u0, u64 v, u64 *r) {
 	const unsigned n_udword_bits = sizeof(u64) * 8;
 	const u64 b = (1ULL << (n_udword_bits / 2));
 	u64 un1, un0;
@@ -239,6 +239,15 @@ Test(stack_fails) {
 	__stack_chk_fail();
 	_debug_no_write = false;
 	_debug_no_exit = false;
+}
+
+Test(branch_conditions_div) {
+	u64 r, u1, u0, v;
+	u1 = U64_MAX;
+	u0 = U64_MAX;
+	v = U64_MAX;
+	udiv128by64to64(u1, u0, v, &r);
+	ASSERT_EQ(r, 18446744069414584319UL, "U64_MAX for all inputs");
 }
 
 #endif
