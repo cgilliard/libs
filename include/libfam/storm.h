@@ -464,6 +464,11 @@ Test(storm_cipher_vector) {
 	ASSERT(!memcmp(buffer2, expected2, 32), "expected2");
 }
 
+Bench(storm) {
+	usleep(1230000);
+	println("bench1");
+}
+
 #endif /* TEST */
 /* GCOVR_EXCL_STOP */
 

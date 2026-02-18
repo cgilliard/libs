@@ -61,8 +61,8 @@ __asm__(
 #include <libfam/format.h>
 #include <libfam/storm.h>
 
-i32 cur_tests = 0;
-i32 exe_test = 0;
+i32 cur_tests = 0, cur_benches = 0, exe_test = 0;
+bool is_bench = false;
 
 typedef struct {
 	void (*test_fn)(void);
@@ -72,13 +72,15 @@ typedef struct {
 TestEntry tests[MAX_TESTS];
 TestEntry benches[MAX_TESTS];
 
-PUBLIC const char *get_active(void) { return tests[exe_test].name; }
+PUBLIC const char *get_active(void) {
+	return is_bench ? benches[exe_test].name : tests[exe_test].name;
+}
 
 const char *SPACER =(void*)
     "------------------------------------------------------------------"
     "--------------------------";
 
-PUBLIC int main(int argc, char **argv, char **envp) {
+static int run_tests(char **envp) {
 	i64 global_timer;
 	i32 count, test_count;
 	Arena *a = NULL;
@@ -127,29 +129,89 @@ PUBLIC int main(int argc, char **argv, char **envp) {
 			BOLD_GREEN, RESET, cur_tests, BOLD_BLUE, RESET, RED,
 			(f64)global_timer / 1000000.0, RESET);
 
+	return 0;
+}
+
+static i32 run_benches(char **envp) {
+	i64 global_timer;
+	i32 count, test_count;
+	Arena *a = NULL;
+	test_count = 0;
+
+	arena_init(&a, 1024 * 1024 * 16, 8);
+	init_environ(envp, a);
+
+	println("{}Running {} benches{}...", BOLD_BLUE, cur_benches, RESET);
+	println("{}", SPACER);
+
+	global_timer = micros();
+	for (exe_test = 0; exe_test < cur_benches; exe_test++) {
+		char *filter = getenv("TEST_FILTER");
+		if (filter && strcmp(filter, "*") &&
+		    strcmp(filter, benches[exe_test].name))
+			continue;
+
+		print("{}Running bench {} {} ({}{}{}) ", YELLOW, RESET,
+		      ++test_count, DIMMED, benches[exe_test].name, RESET);
+		benches[exe_test].test_fn();
+	}
+	global_timer = micros() - global_timer;
+	println("{}", SPACER);
+	println("{}Success!{} {} {}benches passed!{} {}[{:.2}s]{}", BOLD_GREEN,
+		RESET, cur_benches, BOLD_BLUE, RESET, GREEN,
+		(f64)global_timer / 1000000.0, RESET);
+
+	return 0;
+}
+
+PUBLIC i32 main(i32 argc, char **argv, char **envp) {
+	i32 status;
+	if (argc >= 2 && !strcmp(argv[1], "bench")) {
+		is_bench = true;
+		status = run_benches(envp);
+	} else {
+		is_bench = false;
+		status = run_tests(envp);
+	}
 #ifndef COVERAGE
-	exit_group(0);
+	exit_group(status);
 #endif /* COVERAGE */
-	(void)argc;
-	(void)argv;
 }
 
 PUBLIC void add_test_fn(void (*test_fn)(void), const char *name) {
-	if (__builtin_strlen((const void *)name) > MAX_TEST_NAME) {
+	if (strlen(name) > MAX_TEST_NAME) {
 		const char *msg = "Test name too long!";
-		pwrite(2, msg, __builtin_strlen(msg), -1);
+		pwrite(2, msg, strlen(msg), -1);
 		exit_group(-1);
 	}
 	if (cur_tests >= MAX_TESTS) {
 		const char *msg = "Too many tests!";
-		pwrite(2, msg, __builtin_strlen(msg), -1);
+		pwrite(2, msg, strlen(msg), -1);
 		exit_group(-1);
 	}
 
 	tests[cur_tests].test_fn = test_fn;
-	__builtin_memset(tests[cur_tests].name, 0, MAX_TEST_NAME);
-	__builtin_strcpy((void *)tests[cur_tests].name, (const void *)name);
+	memset(tests[cur_tests].name, 0, MAX_TEST_NAME);
+	strcpy(tests[cur_tests].name, name);
 	cur_tests++;
+}
+
+PUBLIC void add_bench_fn(void (*bench_fn)(void), const char *name) {
+	if (strlen(name) > MAX_TEST_NAME) {
+		const char *msg = "Bench name too long!";
+		pwrite(2, msg, strlen(msg), -1);
+		exit_group(-1);
+	}
+	if (cur_benches >= MAX_TESTS) {
+		const char *msg = "Too many benches!";
+		pwrite(2, msg, strlen(msg), -1);
+		exit_group(-1);
+	}
+
+	benches[cur_benches].test_fn = bench_fn;
+	memset(benches[cur_benches].name, 0, MAX_TEST_NAME);
+	strcpy(benches[cur_benches].name, name);
+	cur_benches++;
 }
 /* GCOVR_EXCL_STOP */
 

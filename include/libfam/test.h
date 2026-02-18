@@ -52,6 +52,14 @@ const char *get_active(void);
 	}                                                           \
 	void __test_##name(void)
 
+#define Bench(name)                                                  \
+	void __bench_##name(void);                                   \
+	void __add_bench_##name(void);                               \
+	void __attribute__((constructor)) __add_bench_##name(void) { \
+		add_bench_fn(__bench_##name, #name);                 \
+	}                                                            \
+	void __bench_##name(void)
+
 #define ASSERT_EQ(x, y, ...)                                                   \
 	({                                                                     \
 		if ((x) != (y)) {                                              \

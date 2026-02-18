@@ -2,6 +2,7 @@
 
 ALL=0;
 TEST=0;
+BENCH=0;
 CLEAN=0;
 INSTALL=0;
 INSTALL_LIB=0;
@@ -36,6 +37,10 @@ for arg in "$@"; do
 	    TEST=1;
 	    LIB_DIR=./target/libtest
 	    ;;
+	bench)
+	    BENCH=1;
+	    LIB_DIR=./target/libtest
+	    ;;
 	cov)
 	    COVERAGE=1;
 	    LIB_DIR=./target/libcov
@@ -59,6 +64,7 @@ done
 
 if [ "${CLEAN}" = "0" ] &&
    [ "${TEST}" = "0" ] &&
+   [ "${BENCH}" = "0" ] &&
    [ "${INSTALL}" = "0" ] &&
    [ "${COVERAGE}" = "0" ] &&
    [ "${INSTALL_LIB}" = "0" ]; then
@@ -72,7 +78,7 @@ fi
 
 if [ "${ALL}" = "1" ]; then
     mkdir -p ${LIB_DIR};
-elif [ "${TEST}" = "1" ]; then
+elif [ "${TEST}" = "1" ] || [ "${BENCH}" = "1" ]; then
     mkdir -p ${LIB_DIR};
     mkdir -p ${BIN_DIR};
 elif [ "${COVERAGE}" = "1" ]; then
@@ -114,7 +120,7 @@ case "$ARCH" in
 esac
 
 
-if [ "${TEST}" = "1" ]; then
+if [ "${TEST}" = "1" ] || [ "${BENCH}" = "1" ]; then
     LIBS="";
     NEED_LD=0;
     for SRC in "$INCLUDE_DIR"/libfam/*.h; do
@@ -165,6 +171,11 @@ if [ "${TEST}" = "1" ]; then
         echo ${COMMAND};
         ${COMMAND} || exit 1;
     fi
+    if [ "${BENCH}" = "1" ]; then
+	    ARG="bench";
+    else
+	    ARG="";
+    fi
     if [ "${VALGRIND}" = "1" ]; then
 	    LD_LIBRARY_PATH=${LIB_DIR} \
 		    valgrind \
@@ -172,9 +183,9 @@ if [ "${TEST}" = "1" ]; then
                     --tool=memcheck \
                     --track-origins=yes \
                     --error-exitcode=1 \
-		    ${BIN_DIR}/runtests || exit 1;
+		    ${BIN_DIR}/runtests ${ARG} || exit 1;
     else
-        LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests || exit 1;
+        LD_LIBRARY_PATH=${LIB_DIR} ${BIN_DIR}/runtests ${ARG} || exit 1;
     fi
 elif [ "${COVERAGE}" = "1" ]; then
 	COMMAND="gcc \
