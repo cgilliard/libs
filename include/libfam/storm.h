@@ -26,6 +26,49 @@
 #ifndef _STORM_H
 #define _STORM_H
 
+/*****************************************************************************
+ *
+```
+sudo ./build install
+```
+ * test.c
+```
+#include <libfam/format.h>
+#include <libfam/storm.h>
+
+void _start(void) {
+	StormContext ctx;
+	__attribute__((aligned(32))) const u8 SEED[32] = {1, 2, 3};
+	__attribute__((aligned(32))) u8 buffer[32] = "Hello world!";
+
+	storm_init(&ctx, SEED);
+	storm_xcrypt_buffer(&ctx, buffer);
+
+	StormContext ctx2;
+	storm_init(&ctx2, SEED);
+
+	storm_xcrypt_buffer(&ctx2, buffer);
+	println("{}", (char*)buffer);
+
+	exit_group(0);
+}
+```
+ *
+```
+cc -DSTORM_ALL_IMPL -DFORMAT_ALL_IMPL test.c -o test -static -O3 -nostdlib
+```
+```
+$ du -h test
+36K	test
+$ ldd test
+	not a dynamic executable
+$ ./test
+Hello world!
+$
+```
+ *
+ ****************************************************************************/
+
 #include <libfam/types.h>
 
 #define STORM_CONTEXT_SIZE 192
@@ -37,6 +80,11 @@ typedef struct {
 void storm_init(StormContext *ctx, const u8 key[32]);
 void storm_next_block(StormContext *ctx, u8 buf[32]);
 void storm_xcrypt_buffer(StormContext *s, u8 buf[32]);
+
+#ifdef STORM_ALL_IMPL
+#define STORM_IMPL
+#define AESENC_IMPL
+#endif
 
 #endif /* _STORM_H */
 
