@@ -28,27 +28,22 @@
 
 /*****************************************************************************
  *
- * This library is dependent on types.h and utils.h. To use it, ensure that
- * those files along with syscall.h are in your include/libfam directory and
- * you must define SYSCALL_IMPL before your include of the library.
- *
- *
+```
+sudo ./build install
+```
  * test.c
- * ```
- * #define SYSCALL_IMPL
- * #include <libfam/syscall.h>
- *
- * void _start(void) { exit_group(3); }
- * ```
- *
- * ```
- * # cc -nostdlib -Iinclude test.c -o test
- * ```
- *
- ****************************************************************************/
+```
+#include <libfam/syscall.h>
 
-/*****************************************************************************
- * Public Interface
+i32 main(void) {
+    exit_group(3);
+}
+```
+ *
+```
+cc -DSYSCALL_IMPL test.c -o test
+```
+ *
  ****************************************************************************/
 
 #include <libfam/types.h>
@@ -76,10 +71,6 @@ i32 getsockname(i32 sockfd, struct sockaddr *addr, u64 *addrlen);
 #ifdef SYSCALL_IMPL
 #ifndef SYSCALL_IMPL_GUARD
 #define SYSCALL_IMPL_GUARD
-
-/*****************************************************************************
- * Implementation
- ****************************************************************************/
 
 #include <libfam/debug.h>
 #include <libfam/errno.h>
@@ -217,9 +208,6 @@ PUBLIC i32 getsockname(i32 sockfd, struct sockaddr *addr, u64 *addrlen) {
 #endif
 }
 
-/*****************************************************************************
- * Tests
- ****************************************************************************/
 /* GCOVR_EXCL_START */
 #ifdef TEST
 #include <libfam/format.h>
