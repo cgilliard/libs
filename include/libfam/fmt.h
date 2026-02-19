@@ -650,7 +650,7 @@ static i32 fmt_proc_placeholder(Fmt *f, const char **np,
 }
 
 PUBLIC i32 fmt_append(Fmt *f, const char *p, ...) {
-	i32 result;
+	i32 result = 0;
 	const char *start = p;
 	__builtin_va_list args;
 
@@ -658,7 +658,8 @@ PUBLIC i32 fmt_append(Fmt *f, const char *p, ...) {
 	__builtin_va_start(args, p);
 	while (*p) {
 		if (*p == '{') {
-			result = fmt_append_raw(f, start, p - start);
+			u64 len = p - start;
+			if (len) result = fmt_append_raw(f, start, len);
 			if (result < 0) goto cleanup;
 			if (*(p + 1) == '{') {
 				fmt_append_raw(f, "{", 1);
