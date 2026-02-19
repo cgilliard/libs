@@ -71,6 +71,7 @@ cc -DFMT_ALL_IMPL test.c -o test
 #pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
 #endif /* !__clang__ */
 
+/* GCOVR_EXCL_START */
 #define FORMAT_ITEM(ign, value)                                                \
 	({                                                                     \
 		FmtItem _p__ = _Generic((value),                               \
@@ -238,6 +239,8 @@ cc -DFMT_ALL_IMPL test.c -o test
 		fmt_clear(&_f__);                                           \
 		exit_group(-1);                                             \
 	})
+
+/* GCOVR_EXCL_STOP */
 
 typedef struct {
 	char *buf;
@@ -908,16 +911,14 @@ Test(fmt1) {
 	fmt_clear(&f);
 }
 
-Test(fmt_item) {
+Test(fmt2) {
 	Fmt f = {0};
 	FmtItem v = FORMAT_ITEM(_, 1.2);
+
 	fmt_append(&f, "{}", v);
 	ASSERT(!strcmp(fmt_to_string(&f), "1.2"), "1.2");
 	fmt_clear(&f);
-}
 
-Test(FORMAT1) {
-	Fmt f = {0};
 	FORMAT(&f, "a={},b={},c={},d={}", 1, -5, "test", 1.2);
 	ASSERT(!strcmp(fmt_to_string(&f), "a=1,b=-5,c=test,d=1.2"),
 	       "a=1,b=-5,c=test,d=1.2");
@@ -931,6 +932,120 @@ Test(FORMAT1) {
 	FORMAT(&f, "a={},b={},c={},d={}", a, b, c, d);
 	ASSERT(!strcmp(fmt_to_string(&f), "a=1,b=-5,c=test,d=1.2"),
 	       "a=1,b=-5,c=test,d=1.2");
+	fmt_clear(&f);
+}
+
+Test(fmt3) {
+	u64 i;
+	char buf[PAGE_SIZE * 2];
+	char cmp[PAGE_SIZE * 2 + 2] = {0};
+	Fmt f = {0};
+
+	memset(buf, 'x', PAGE_SIZE * 2);
+	buf[PAGE_SIZE * 2 - 1] = 0;
+	fmt_append(&f, "y");
+	FORMAT(&f, "{}", buf);
+
+	cmp[0] = 'y';
+	memcpy(cmp + 1, buf, PAGE_SIZE * 2);
+	ASSERT(!strcmp(cmp, fmt_to_string(&f)), "big buf");
+
+	fmt_clear(&f);
+}
+
+Test(fmt4) {
+	Fmt f = {0};
+	FORMAT(&f, "{.1.2}", 1.1);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "two .");
+	fmt_clear(&f);
+	FORMAT(&f, "{.40}", 1.1);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "max precision = 32");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:40:50}", 1.1);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "has alignment");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:9999}", 1.1);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "max width = 4096");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{bb}", 11);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "already specified");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{xx}", 11);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "already specified");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{XX}", 11);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "already specified");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{cc}", 11);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "already specified");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{nn}", 11);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "already specified");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{tt}", 11);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "already specified");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{");
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "unexpected end");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{.3}", "abc");
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "has precision");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{.3}", 30U);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "has precision");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{X}", 15U);
+	ASSERT(!strcmp(fmt_to_string(&f), "0xF"), "hex upper unsigned");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{x}", 15U);
+	ASSERT(!strcmp(fmt_to_string(&f), "0xf"), "hex lower unsigned");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{n}", 1234U);
+	ASSERT(!strcmp(fmt_to_string(&f), "1,234"), "nice unsigned");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{c}", (u8)'x');
+	ASSERT(!strcmp(fmt_to_string(&f), "x"), "char unsigned");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{b}", 15U);
+	ASSERT(!strcmp(fmt_to_string(&f), "0b1111"), "binary unsigned");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{c}", 200U);
+	ASSERT(!strcmp(fmt_to_string(&f), "?"), "undisplayable char unsigned");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:10}", 200U);
+	ASSERT(!strcmp(fmt_to_string(&f), "200       "), "left align unsigned");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:>10}", 200U);
+	ASSERT(!strcmp(fmt_to_string(&f), "       200"),
+	       "right align unsigned");
+	fmt_clear(&f);
+}
+
+Test(fmt5) {
+	Fmt f = {0};
+	FmtItem x = {.t = 100, .data.ivalue = 123};
+
+	ASSERT_EQ(fmt_append(&f, "{}", x), -EPROTO, "illegal type");
+
 	fmt_clear(&f);
 }
 

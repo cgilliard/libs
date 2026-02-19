@@ -120,7 +120,6 @@ PUBLIC const char *get_blue(void) { return no_color() ? "" : "\x1b[34m"; }
 PUBLIC const char *get_bold_blue(void) {
 	return no_color() ? "" : "\x1b[1;34m";
 }
-PUBLIC const char *get_reset(void) { return no_color() ? "" : "\x1b[0m"; }
 PUBLIC const char *get_bright_green(void) {
 	return no_color() ? "" : "\x1b[92m";
 }
@@ -149,6 +148,8 @@ PUBLIC const char *get_bold_bright_magenta(void) {
 	return no_color() ? "" : "\x1b[1;95m";
 }
 
+PUBLIC const char *get_reset(void) { return no_color() ? "" : "\x1b[0m"; }
+
 /* GCOVR_EXCL_START */
 #ifdef TEST
 
@@ -169,12 +170,10 @@ Test(colors1) {
 	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[2mtest\x1b[0m"), "dimmed");
 	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BRIGHT_RED, RESET);
-	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[91mtest\x1b[0m"),
-	       "bright_red");
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[91mtest\x1b[0m"), "bright_red");
 	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BOLD_RED, RESET);
-	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;31mtest\x1b[0m"),
-	       "bold red");
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;31mtest\x1b[0m"), "bold red");
 	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", GREEN, RESET);
 	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[32mtest\x1b[0m"), "green");
@@ -196,11 +195,49 @@ Test(colors1) {
 	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;32mtest\x1b[0m"),
 	       "bold green");
 	fmt_clear(&f);
+
 	FORMAT(&f, "{}test{}", BOLD_BRIGHT_RED, RESET);
 	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;91mtest\x1b[0m"),
 	       "bold bright red");
 	fmt_clear(&f);
 
+	FORMAT(&f, "{}test{}", BRIGHT_GREEN, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[92mtest\x1b[0m"),
+	       "bright green");
+	fmt_clear(&f);
+	FORMAT(&f, "{}test{}", BOLD_BRIGHT_GREEN, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;92mtest\x1b[0m"),
+	       "bold bright green");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BRIGHT_YELLOW, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[93mtest\x1b[0m"),
+	       "bright yellow");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BOLD_BRIGHT_YELLOW, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;93mtest\x1b[0m"),
+	       "bold bright yellow");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BRIGHT_CYAN, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[96mtest\x1b[0m"),
+	       "bright cyan");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BOLD_BRIGHT_CYAN, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;96mtest\x1b[0m"),
+	       "bold bright cyan");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BRIGHT_MAGENTA, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[95mtest\x1b[0m"),
+	       "bright magenta");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BOLD_BRIGHT_MAGENTA, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;95mtest\x1b[0m"),
+	       "bold bright magenta");
 	fmt_clear(&f);
 }
 
@@ -246,6 +283,38 @@ Test(colors2) {
 	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BOLD_BRIGHT_RED, RESET);
 	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bold bright red");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BRIGHT_GREEN, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bright green");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BOLD_BRIGHT_GREEN, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bold bright green");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BRIGHT_YELLOW, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bright yellow");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BOLD_BRIGHT_YELLOW, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bold bright yellow");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BRIGHT_CYAN, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bright cyan");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BOLD_BRIGHT_CYAN, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bold bright cyan");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BRIGHT_MAGENTA, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bright magenta");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{}test{}", BOLD_BRIGHT_MAGENTA, RESET);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bold bright magenta");
 	fmt_clear(&f);
 
 	_debug_remove_env("NO_COLOR", "1");

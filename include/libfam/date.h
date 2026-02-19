@@ -66,11 +66,8 @@ PUBLIC void unix_to_tm(u64 timestamp, u32 *year, u32 *month, u32 *day,
 
 	while (days >= 365UL) {
 		u32 yd = 365 + is_leap_year(y);
-		if (days >= yd) {
-			days -= yd;
-			y++;
-		} else
-			break;
+		days -= yd;
+		y++;
 	}
 
 	*year = y;
@@ -135,17 +132,46 @@ PUBLIC u8 date_calc(char buffer[MAX_DATE_LEN], u64 micros, u8 precision) {
 	return b - buffer;
 }
 
+/* GCOVR_EXCL_START */
 #ifdef TEST
 
+#include <libfam/fmt.h>
 #include <libfam/sysext.h>
 #include <libfam/test.h>
 
 Test(date1) {
 	char buf[MAX_DATE_LEN] = {0};
-	date_calc(buf, 1771487889817395, 1);
+	u64 m = 1771487889817395;
+	date_calc(buf, m, 1);
 	ASSERT(!strcmp(buf, "2026-02-19 07:58:09.8"), "2026-02-19 07:58:09.8");
+
+	memset(buf, 0, sizeof(buf));
+	m = 1771529535049629;
+	date_calc(buf, m, 1);
+	ASSERT(!strcmp(buf, "2026-02-19 19:32:15.0"), "2026-02-19 19:32:15.0");
+
+	memset(buf, 0, sizeof(buf));
+	m += 2592000000000; /* 30 days */
+	date_calc(buf, m, 1);
+	ASSERT(!strcmp(buf, "2026-03-21 19:32:15.0"), "2026-03-21 19:32:15.0");
+
+	memset(buf, 0, sizeof(buf));
+	m += 62208000000000; /* 2 years */
+	date_calc(buf, m, 1);
+	ASSERT(!strcmp(buf, "2028-03-10 19:32:15.0"), "2028-03-10 19:32:15.0");
+
+	memset(buf, 0, sizeof(buf));
+	m += 2592000000000 * 8; /* 30 * 8 days */
+	date_calc(buf, m, 1);
+	ASSERT(!strcmp(buf, "2028-11-05 19:32:15.0"), "2028-11-05 19:32:15.0");
+
+	memset(buf, 0, sizeof(buf));
+	m -= 1000000 * 60 * 30; /* 30 mins */
+	date_calc(buf, m, 1);
+	ASSERT(!strcmp(buf, "2028-11-05 19:02:15.0"), "2028-11-05 19:02:15.0");
 }
 #endif /* TEST */
+/* GCOVR_EXCL_STOP */
 
 #endif /* DATE_IMPL_GUARD */
 #endif /* DATE_IMPL */
