@@ -462,7 +462,7 @@ static i32 fmt_parse_placeholder(const char **np, FmtSpec *spec) {
 		}
 		(*np)++;
 	}
-	result = -EPROTO;
+	result = -EFAULT;
 cleanup:
 	if (result < 0) {
 		while (**np && **np != '}') (*np)++;
@@ -638,8 +638,8 @@ static i32 fmt_proc_placeholder(Fmt *f, const char **np, FmtItem *item,
 	FmtSpec spec = {0};
 
 	result = fmt_parse_placeholder(np, &spec);
+	if (result != -EFAULT) *item = __builtin_va_arg(*args, FmtItem);
 	if (result < 0) return fmt_proc_err(f);
-	*item = __builtin_va_arg(*args, FmtItem);
 	if (item->t == FmtIntType) return fmt_proc_int_type(f, item, &spec);
 	if (item->t == FmtStringType)
 		return fmt_proc_string_type(f, item, &spec);
