@@ -362,7 +362,7 @@ static i32 fmt_proc_uint_type(Fmt *f, const FmtItem *item,
 				     Int128DisplayTypeCommas);
 	else if (spec->t == FmtSpecTypeChar) {
 		len = 1;
-		if (item->data.uvalue > I8_MAX || item->data.uvalue < 0)
+		if (item->data.uvalue > I8_MAX)
 			buf[0] = '?';
 		else
 			buf[0] = item->data.uvalue;
@@ -442,7 +442,8 @@ PUBLIC i32 fmt_append(Fmt *f, const char *p, ...) {
 
 			result = fmt_append_raw(f, start, p - start);
 			if (result < 0) goto cleanup;
-			if (*(p + 1) == '{') {
+			if (*(p + 1) >= 'A' && *(p + 1) < 'X') {
+			} else if (*(p + 1) == '{') {
 				fmt_append_raw(f, "{", 1);
 				p += 2;
 				start = p;
