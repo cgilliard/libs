@@ -67,6 +67,30 @@ const char *get_bold_blue(void);
 const char *get_reset(void);
 #define RESET get_reset()
 
+const char *get_bright_green(void);
+#define BRIGHT_GREEN get_bright_green()
+
+const char *get_bold_bright_green(void);
+#define BOLD_BRIGHT_GREEN get_bold_bright_green()
+
+const char *get_bright_yellow(void);
+#define BRIGHT_YELLOW get_bright_yellow()
+
+const char *get_bold_bright_yellow(void);
+#define BOLD_BRIGHT_YELLOW get_bold_bright_yellow()
+
+const char *get_bright_cyan(void);
+#define BRIGHT_CYAN get_bright_cyan()
+
+const char *get_bold_bright_cyan(void);
+#define BOLD_BRIGHT_CYAN get_bold_bright_cyan()
+
+const char *get_bright_magenta(void);
+#define BRIGHT_MAGENTA get_bright_magenta()
+
+const char *get_bold_bright_magenta(void);
+#define BOLD_BRIGHT_MAGENTA get_bold_bright_magenta()
+
 #endif /* _COLORS_H */
 
 #ifdef COLORS_IMPL
@@ -97,6 +121,33 @@ PUBLIC const char *get_bold_blue(void) {
 	return no_color() ? "" : "\x1b[1;34m";
 }
 PUBLIC const char *get_reset(void) { return no_color() ? "" : "\x1b[0m"; }
+PUBLIC const char *get_bright_green(void) {
+	return no_color() ? "" : "\x1b[92m";
+}
+PUBLIC const char *get_bold_bright_green(void) {
+	return no_color() ? "" : "\x1b[1;92m";
+}
+
+PUBLIC const char *get_bright_yellow(void) {
+	return no_color() ? "" : "\x1b[93m";
+}
+PUBLIC const char *get_bold_bright_yellow(void) {
+	return no_color() ? "" : "\x1b[1;93m";
+}
+
+PUBLIC const char *get_bright_cyan(void) {
+	return no_color() ? "" : "\x1b[96m";
+}
+PUBLIC const char *get_bold_bright_cyan(void) {
+	return no_color() ? "" : "\x1b[1;96m";
+}
+
+PUBLIC const char *get_bright_magenta(void) {
+	return no_color() ? "" : "\x1b[95m";
+}
+PUBLIC const char *get_bold_bright_magenta(void) {
+	return no_color() ? "" : "\x1b[1;95m";
+}
 
 /* GCOVR_EXCL_START */
 #ifdef TEST
