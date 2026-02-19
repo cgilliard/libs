@@ -52,12 +52,14 @@ __asm__(
 #define RBTREE_IMPL
 #define ERRNO_IMPL
 #define STORM_IMPL
+#define FMT_IMPL
 #endif
 
 #include <libfam/aesenc.h>
 #include <libfam/arena.h>
 #include <libfam/colors.h>
 #include <libfam/env.h>
+#include <libfam/fmt.h>
 #include <libfam/format.h>
 #include <libfam/storm.h>
 

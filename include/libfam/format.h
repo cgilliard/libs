@@ -634,7 +634,7 @@ Test(format1) {
 	       "multi");
 	format_clear(&f);
 	FORMAT(&f, "a={c},b={b} {nothing", (u8)'a', 3);
-	ASSERT(!strcmp("a=a,b=11 {nothing", format_to_string(&f)),
+	ASSERT(!strcmp("a=a,b=0b11 {nothing", format_to_string(&f)),
 	       "char and bin");
 	format_clear(&f);
 	u64 x = 101;

@@ -273,6 +273,8 @@ PUBLIC u8 i128_to_string(char buf[MAX_I128_STRING_LEN], i128 value,
 	return is_negative ? len + 1 : len;
 }
 
+#include <libfam/sysext.h>
+
 PUBLIC u8 u128_to_string(char buf[MAX_U128_STRING_LEN], u128 value,
 			 Int128DisplayType t) {
 	char temp[MAX_U128_STRING_LEN];
@@ -285,10 +287,15 @@ PUBLIC u8 u128_to_string(char buf[MAX_U128_STRING_LEN], u128 value,
 	const char *hex_code = t == Int128DisplayTypeHexUpper
 				   ? "0123456789ABCDEF"
 				   : "0123456789abcdef";
+
 	if (hex) {
 		j = 2;
 		buf[0] = '0';
 		buf[1] = 'x';
+	} else if (mod_val == 2) {
+		j = 2;
+		buf[0] = '0';
+		buf[1] = 'b';
 	}
 	if (value == 0) {
 		buf[j++] = '0';
@@ -326,6 +333,7 @@ PUBLIC u8 u128_to_string(char buf[MAX_U128_STRING_LEN], u128 value,
 			buf[j] = temp[--i];
 		}
 		buf[j] = '\0';
+
 		return j;
 	}
 }
@@ -554,9 +562,9 @@ Test(string_u128) {
 		  "len=5");
 	ASSERT(!strcmp(buf, "0x123"), "string 0x123");
 
-	ASSERT_EQ(i128_to_string(buf, 0xF, Int128DisplayTypeBinary), 4,
+	ASSERT_EQ(i128_to_string(buf, 0xF, Int128DisplayTypeBinary), 6,
 		  "binary 0xF");
-	ASSERT(!strcmp(buf, "1111"), "string 1111");
+	ASSERT(!strcmp(buf, "0b1111"), "string 1111");
 
 	ASSERT(u128_to_string(buf, 9993, Int128DisplayTypeCommas) > 0,
 	       "commas");
@@ -616,7 +624,7 @@ Test(other_situations) {
 
 	len = i128_to_string(buf, 7, Int128DisplayTypeBinary);
 	buf[len] = 0;
-	ASSERT(!strcmp(buf, "111"), "binary");
+	ASSERT(!strcmp(buf, "0b111"), "binary");
 	len = i128_to_string(buf, 1234567890, Int128DisplayTypeCommas);
 	buf[len] = 0;
 	ASSERT(!strcmp(buf, "1,234,567,890"), "long commas");

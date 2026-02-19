@@ -80,6 +80,13 @@ const char *get_active(void);
 		}                                                              \
 	})
 
+static inline u64 splitmix64(u64 *s) {
+	u64 z = (*s += 0x9e3779b97f4a7c15ull);
+	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
+	z = (z ^ (z >> 27)) * 0x94d049bb133111ebull;
+	return z ^ (z >> 31);
+}
+
 /* GCOVR_EXCL_STOP */
 
 #endif /* _TEST_H */
