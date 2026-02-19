@@ -994,12 +994,6 @@ Test(fmt4) {
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "already specified");
 	fmt_clear(&f);
 
-	/*
-	FORMAT(&f, "{");
-	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "unexpected end");
-	fmt_clear(&f);
-	*/
-
 	FORMAT(&f, "{.3}", "abc");
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "has precision");
 	fmt_clear(&f);
@@ -1047,6 +1041,13 @@ Test(fmt5) {
 	FmtItem x = {.t = 100, .data.ivalue = 123};
 
 	ASSERT_EQ(fmt_append(&f, "{}", x), -EPROTO, "illegal type");
+	fmt_clear(&f);
+}
+
+Test(fmt6) {
+	Fmt f = {0};
+	FORMAT(&f, "{", "x");
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "unexpected end");
 	fmt_clear(&f);
 }
 
