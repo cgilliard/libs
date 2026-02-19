@@ -323,9 +323,7 @@ static void rbtree_remove_impl(RbTree *tree, RbTreeNodePair *pair) {
 			rbtree_remove_transplant(tree, successor,
 						 RIGHT(successor));
 			SET_RIGHT(successor, RIGHT(node_to_delete));
-
-			if (RIGHT(successor))
-				SET_PARENT(RIGHT(successor), successor);
+			SET_PARENT(RIGHT(successor), successor);
 		}
 
 		rbtree_remove_transplant(tree, node_to_delete, successor);
