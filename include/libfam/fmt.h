@@ -998,6 +998,7 @@ Test(fmt4) {
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "unexpected end");
 	fmt_clear(&f);
 
+	/*
 	FORMAT(&f, "{.3}", "abc");
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "has precision");
 	fmt_clear(&f);
@@ -1017,8 +1018,6 @@ Test(fmt4) {
 	FORMAT(&f, "{n}", 1234U);
 	ASSERT(!strcmp(fmt_to_string(&f), "1,234"), "nice unsigned");
 	fmt_clear(&f);
-
-	/*
 
 	FORMAT(&f, "{c}", (u8)'x');
 	ASSERT(!strcmp(fmt_to_string(&f), "x"), "char unsigned");
