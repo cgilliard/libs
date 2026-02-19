@@ -632,21 +632,21 @@ cleanup:
 	return result;
 }
 
-static i32 fmt_proc_placeholder(Fmt *f, const char **np, FmtItem *item,
+static i32 fmt_proc_placeholder(Fmt *f, const char **np,
 				__builtin_va_list *args) {
 	i32 result;
+	FmtItem item;
 	FmtSpec spec = {0};
 
 	result = fmt_parse_placeholder(np, &spec);
-	if (result != -EFAULT) *item = __builtin_va_arg(*args, FmtItem);
+	if (result != -EFAULT) item = __builtin_va_arg(*args, FmtItem);
 	if (result < 0) return fmt_proc_err(f);
-	if (item->t == FmtIntType) return fmt_proc_int_type(f, item, &spec);
-	if (item->t == FmtStringType)
-		return fmt_proc_string_type(f, item, &spec);
-	if (item->t == FmtUIntType) return fmt_proc_uint_type(f, item, &spec);
-	if (item->t == FmtFloatType) return fmt_proc_float_type(f, item, &spec);
+	if (item.t == FmtIntType) return fmt_proc_int_type(f, &item, &spec);
+	if (item.t == FmtStringType)
+		return fmt_proc_string_type(f, &item, &spec);
+	if (item.t == FmtUIntType) return fmt_proc_uint_type(f, &item, &spec);
+	if (item.t == FmtFloatType) return fmt_proc_float_type(f, &item, &spec);
 	return -EPROTO;
-	(void)args;
 }
 
 PUBLIC i32 fmt_append(Fmt *f, const char *p, ...) {
@@ -665,10 +665,7 @@ PUBLIC i32 fmt_append(Fmt *f, const char *p, ...) {
 				p += 2;
 				start = p;
 			} else {
-				FmtItem
-				    next; /*= __builtin_va_arg(args, FmtItem);*/
-				result =
-				    fmt_proc_placeholder(f, &p, &next, &args);
+				result = fmt_proc_placeholder(f, &p, &args);
 				if (result < 0) goto cleanup;
 				start = p;
 			}
