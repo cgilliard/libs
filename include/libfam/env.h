@@ -56,7 +56,7 @@ void _debug_remove_env(const char *key, char *value);
 
 #include <libfam/debug.h>
 #include <libfam/errno.h>
-#include <libfam/format.h>
+#include <libfam/fmt.h>
 #include <libfam/rbtree.h>
 #include <libfam/string.h>
 #include <libfam/syscall.h>

@@ -33,7 +33,7 @@ sudo ./build install
 ```
  * test.c
 ```
-#include <libfam/format.h>
+#include <libfam/fmt.h>
 #include <libfam/storm.h>
 
 void _start(void) {

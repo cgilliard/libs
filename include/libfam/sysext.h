@@ -375,6 +375,7 @@ PUBLIC u64 cycle_counter(void) {
 /* GCOVR_EXCL_START */
 #ifdef TEST
 #include <libfam/iov.h>
+#include <libfam/string.h>
 #include <libfam/test.h>
 
 Test(map) {
@@ -554,22 +555,27 @@ Test(sysext_failures) {
 	_debug_alloc_failure = I64_MAX;
 
 	ASSERT(write_num(-1, 0) < 0);
+	i64 res;
 
 	_debug_syscall_return = -1;
-	ASSERT(micros() < 0);
-
-	_debug_syscall_return = -47;
-	ASSERT_EQ(write_num(2, (i64)(-0x7FFFFFFFFFFFFFFF - 1)), -47);
+	res = micros();
 	_debug_syscall_return = 0;
+	ASSERT(res < 0);
 
 	_debug_pwrite_return = 1;
-	i32 res = write_num(2, (i64)(-0x7FFFFFFFFFFFFFFF - 1));
+	res = write_num(2, (i64)(-0x7FFFFFFFFFFFFFFF - 1));
 	_debug_pwrite_return = 0;
 	ASSERT_EQ(res, -EIO, "case 1 expected {}, found {}", -EIO, res);
 
-	_debug_syscall_return = -47;
-	ASSERT_EQ(write_num(2, (i64)(-0x5FFFFFFFFFFFFFFF - 1)), -47, "-47");
-	_debug_syscall_return = 0;
+	_debug_pwrite_return = -47;
+	res = write_num(2, (i64)(-0x5FFFFFFFFFFFFFFF - 1));
+	_debug_pwrite_return = 0;
+	ASSERT_EQ(res, -47, "-47");
+
+	_debug_pwrite_return = -47;
+	res = write_num(2, (i64)(-0x7FFFFFFFFFFFFFFF - 1));
+	_debug_pwrite_return = 0;
+	ASSERT_EQ(res, -47, "-47");
 
 	_debug_pwrite_return = 1;
 	res = write_num(2, (i64)(-0x5FFFFFFFFFFFFFFF - 1));

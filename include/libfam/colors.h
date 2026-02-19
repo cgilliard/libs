@@ -153,99 +153,100 @@ PUBLIC const char *get_bold_bright_magenta(void) {
 #ifdef TEST
 
 #include <libfam/env.h>
-#include <libfam/format.h>
+#include <libfam/fmt.h>
+#include <libfam/string.h>
 #include <libfam/test.h>
 
 Test(colors1) {
-	Formatter f = {0};
+	Fmt f = {0};
 	FORMAT(&f, "{}test{}", RED, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[31mtest\x1b[0m"), "red");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[31mtest\x1b[0m"), "red");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BLUE, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[34mtest\x1b[0m"), "blue");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[34mtest\x1b[0m"), "blue");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", DIMMED, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[2mtest\x1b[0m"), "dimmed");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[2mtest\x1b[0m"), "dimmed");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BRIGHT_RED, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[91mtest\x1b[0m"),
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[91mtest\x1b[0m"),
 	       "bright_red");
-	format_clear(&f);
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BOLD_RED, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[1;31mtest\x1b[0m"),
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;31mtest\x1b[0m"),
 	       "bold red");
-	format_clear(&f);
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", GREEN, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[32mtest\x1b[0m"), "green");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[32mtest\x1b[0m"), "green");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", YELLOW, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[33mtest\x1b[0m"), "yellow");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[33mtest\x1b[0m"), "yellow");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", CYAN, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[36mtest\x1b[0m"), "cyan");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[36mtest\x1b[0m"), "cyan");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", MAGENTA, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[35mtest\x1b[0m"), "magenta");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[35mtest\x1b[0m"), "magenta");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BOLD_BLUE, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[1;34mtest\x1b[0m"),
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;34mtest\x1b[0m"),
 	       "bold blue");
-	format_clear(&f);
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BOLD_GREEN, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[1;32mtest\x1b[0m"),
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;32mtest\x1b[0m"),
 	       "bold green");
-	format_clear(&f);
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BOLD_BRIGHT_RED, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "\x1b[1;91mtest\x1b[0m"),
+	ASSERT(!strcmp(fmt_to_string(&f), "\x1b[1;91mtest\x1b[0m"),
 	       "bold bright red");
-	format_clear(&f);
+	fmt_clear(&f);
 
-	format_clear(&f);
+	fmt_clear(&f);
 }
 
 Test(colors2) {
 	Arena *a = NULL;
-	Formatter f = {0};
+	Fmt f = {0};
 
 	arena_init(&a, 16834, 8);
 	_debug_insert_env("NO_COLOR", "1", a);
 
 	FORMAT(&f, "{}test{}", RED, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "red");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "red");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BLUE, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "blue");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "blue");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", DIMMED, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "dimmed");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "dimmed");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BRIGHT_RED, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "bright_red");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bright_red");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BOLD_RED, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "bold red");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bold red");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", GREEN, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "green");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "green");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", YELLOW, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "yellow");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "yellow");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", CYAN, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "cyan");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "cyan");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", MAGENTA, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "magenta");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "magenta");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BOLD_BLUE, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "bold blue");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bold blue");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BOLD_GREEN, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "bold green");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bold green");
+	fmt_clear(&f);
 	FORMAT(&f, "{}test{}", BOLD_BRIGHT_RED, RESET);
-	ASSERT(!strcmp(format_to_string(&f), "test"), "bold bright red");
-	format_clear(&f);
+	ASSERT(!strcmp(fmt_to_string(&f), "test"), "bold bright red");
+	fmt_clear(&f);
 
 	_debug_remove_env("NO_COLOR", "1");
 	arena_destroy(a);

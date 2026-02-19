@@ -23,26 +23,55 @@
  *
  *******************************************************************************/
 
-#include <libfam/types.h>
-
 #ifndef _FMT_H
 #define _FMT_H
 
+/*****************************************************************************
+ *
+```
+sudo ./build install
+```
+ * test.c
+```
+#include <libfam/fmt.h>
+
+i32 main(void) {
+    println("{} + {} = {}", 1, 1, 2);
+    return 0;
+}
+```
+ *
+```
+cc -DFMT_ALL_IMPL test.c -o test
+```
+ *
+ ****************************************************************************/
+
+#ifdef FMT_ALL_IMPL
+#define SYSCALL_IMPL
+#define FMT_IMPL
+#define STRING_IMPL
+#define SYSEXT_IMPL
+#define SYNC_IMPL
+#define STUBS_IMPL
+#define DATE_IMPL
+#endif
+
+#include <libfam/sysext.h>
 #include <libfam/types.h>
 
 #define MAX_PRECISION 32
 #define MAX_WIDTH 4096
 
-/*
 #pragma GCC diagnostic push
 #ifdef __clang__
 #pragma GCC diagnostic ignored \
     "-Wincompatible-pointer-types-discards-qualifiers"
 #else
 #pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
-#endif */ /* !__clang__ */
+#endif /* !__clang__ */
 
-#define FORMAT_ITEM1(ign, value)                                               \
+#define FORMAT_ITEM(ign, value)                                                \
 	({                                                                     \
 		FmtItem _p__ = _Generic((value),                               \
 		    char: ((FmtItem){                                          \
@@ -139,28 +168,28 @@
 	})
 
 #ifdef __clang__
-#define FORMAT1(f, fmt, ...)                                                   \
+#define FORMAT(f, fmt, ...)                                                    \
 	({                                                                     \
 		_Pragma("GCC diagnostic push");                                \
 		/* clang-format off */                                       \
                 _Pragma("GCC diagnostic ignored \"-Wincompatible-pointer-types-discards-qualifiers\""); \
 		/* clang-format on */                                          \
-		fmt_append(f, fmt __VA_OPT__(, FOR_EACH(FORMAT_ITEM1, _, (, ), \
+		fmt_append(f, fmt __VA_OPT__(, FOR_EACH(FORMAT_ITEM, _, (, ),  \
 							__VA_ARGS__)));        \
 		_Pragma("GCC diagnostic pop");                                 \
 	})
 #else
-#define FORMAT1(f, fmt, ...)                                                   \
-	({                                                                     \
-		_Pragma("GCC diagnostic push");                                \
-		_Pragma("GCC diagnostic ignored \"-Wdiscarded-qualifiers\"");  \
-		fmt_append(f, fmt __VA_OPT__(, FOR_EACH(FORMAT_ITEM1, _, (, ), \
-							__VA_ARGS__)));        \
-		_Pragma("GCC diagnostic pop");                                 \
+#define FORMAT(f, fmt, ...)                                                   \
+	({                                                                    \
+		_Pragma("GCC diagnostic push");                               \
+		_Pragma("GCC diagnostic ignored \"-Wdiscarded-qualifiers\""); \
+		fmt_append(f, fmt __VA_OPT__(, FOR_EACH(FORMAT_ITEM, _, (, ), \
+							__VA_ARGS__)));       \
+		_Pragma("GCC diagnostic pop");                                \
 	})
 #endif
 
-#define write_all1(fd, s, len)                                       \
+#define write_all(fd, s, len)                                        \
 	({                                                           \
 		u64 _wlen__ = 0, _to_write__ = len;                  \
 		while (_wlen__ < _to_write__) {                      \
@@ -172,42 +201,42 @@
 		}                                                    \
 	})
 
-#define println1(fmt, ...)                                                   \
-	({                                                                   \
-		const char *_tmp__;                                          \
-		Fmt _f__ = {0};                                              \
-		if (FORMAT1(&_f__, fmt, __VA_ARGS__) >= 0) {                 \
-			if (fmt_append(&_f__, "\n") >= 0) {                  \
-				_tmp__ = fmt_to_string(&_f__);               \
-				if (_tmp__) write_all1(1, _tmp__, _f__.pos); \
-			}                                                    \
-		}                                                            \
-		fmt_clear(&_f__);                                            \
+#define println(fmt, ...)                                                   \
+	({                                                                  \
+		const char *_tmp__;                                         \
+		Fmt _f__ = {0};                                             \
+		if (FORMAT(&_f__, fmt, __VA_ARGS__) >= 0) {                 \
+			if (fmt_append(&_f__, "\n") >= 0) {                 \
+				_tmp__ = fmt_to_string(&_f__);              \
+				if (_tmp__) write_all(1, _tmp__, _f__.pos); \
+			}                                                   \
+		}                                                           \
+		fmt_clear(&_f__);                                           \
 	})
 
-#define print1(fmt, ...)                                             \
-	({                                                           \
-		const char *_tmp__;                                  \
-		Fmt _f__ = {0};                                      \
-		if (FORMAT1(&_f__, fmt, __VA_ARGS__) >= 0) {         \
-			_tmp__ = fmt_to_string(&_f__);               \
-			if (_tmp__) write_all1(1, _tmp__, _f__.pos); \
-		}                                                    \
-		fmt_clear(&_f__);                                    \
+#define print(fmt, ...)                                             \
+	({                                                          \
+		const char *_tmp__;                                 \
+		Fmt _f__ = {0};                                     \
+		if (FORMAT(&_f__, fmt, __VA_ARGS__) >= 0) {         \
+			_tmp__ = fmt_to_string(&_f__);              \
+			if (_tmp__) write_all(1, _tmp__, _f__.pos); \
+		}                                                   \
+		fmt_clear(&_f__);                                   \
 	})
 
-#define panic1(fmt, ...)                                                     \
-	({                                                                   \
-		const char *_tmp__;                                          \
-		Fmt _f__ = {0};                                              \
-		if (FORMAT1(&_f__, fmt, __VA_ARGS__) >= 0) {                 \
-			if (fmt_append(&_f__, "\n") >= 0) {                  \
-				_tmp__ = fmt_to_string(&_f__);               \
-				if (_tmp__) write_all1(2, _tmp__, _f__.pos); \
-			}                                                    \
-		}                                                            \
-		fmt_clear(&_f__);                                            \
-		exit_group(-1);                                              \
+#define panic(fmt, ...)                                                     \
+	({                                                                  \
+		const char *_tmp__;                                         \
+		Fmt _f__ = {0};                                             \
+		if (FORMAT(&_f__, fmt, __VA_ARGS__) >= 0) {                 \
+			if (fmt_append(&_f__, "\n") >= 0) {                 \
+				_tmp__ = fmt_to_string(&_f__);              \
+				if (_tmp__) write_all(2, _tmp__, _f__.pos); \
+			}                                                   \
+		}                                                           \
+		fmt_clear(&_f__);                                           \
+		exit_group(-1);                                             \
 	})
 
 typedef struct {
@@ -881,7 +910,7 @@ Test(fmt1) {
 
 Test(fmt_item) {
 	Fmt f = {0};
-	FmtItem v = FORMAT_ITEM1(_, 1.2);
+	FmtItem v = FORMAT_ITEM(_, 1.2);
 	fmt_append(&f, "{}", v);
 	ASSERT(!strcmp(fmt_to_string(&f), "1.2"), "1.2");
 	fmt_clear(&f);
@@ -889,7 +918,7 @@ Test(fmt_item) {
 
 Test(FORMAT1) {
 	Fmt f = {0};
-	FORMAT1(&f, "a={},b={},c={},d={}", 1, -5, "test", 1.2);
+	FORMAT(&f, "a={},b={},c={},d={}", 1, -5, "test", 1.2);
 	ASSERT(!strcmp(fmt_to_string(&f), "a=1,b=-5,c=test,d=1.2"),
 	       "a=1,b=-5,c=test,d=1.2");
 	fmt_clear(&f);
@@ -899,7 +928,7 @@ Test(FORMAT1) {
 	const char *c = "test";
 	f64 d = 1.2;
 
-	FORMAT1(&f, "a={},b={},c={},d={}", a, b, c, d);
+	FORMAT(&f, "a={},b={},c={},d={}", a, b, c, d);
 	ASSERT(!strcmp(fmt_to_string(&f), "a=1,b=-5,c=test,d=1.2"),
 	       "a=1,b=-5,c=test,d=1.2");
 	fmt_clear(&f);

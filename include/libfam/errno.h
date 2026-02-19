@@ -448,13 +448,11 @@ PUBLIC char *strerror(i32 err_code) {
 
 /* GCOVR_EXCL_START */
 #ifdef TEST
+
+#include <libfam/string.h>
 #include <libfam/test.h>
+
 Test(strerror) {
-	/*
-	ASSERT(!strcmp(strerror(SUCCESS), "Success"), "SUCCESS → Success");
-	ASSERT(!strcmp(strerror(EPERM), "Operation not permitted"),
-	       "EPERM → Operation not permitted");
-	       */
 	ASSERT(!strcmp(strerror(SUCCESS), "Success"), "SUCCESS → Success");
 	ASSERT(!strcmp(strerror(EPERM), "Operation not permitted"),
 	       "EPERM → Operation not permitted");

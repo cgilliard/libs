@@ -39,7 +39,6 @@ __asm__(
 #define AESENC_IMPL
 #define LIMITS_IMPL
 #define DEBUG_IMPL
-#define FORMAT_IMPL
 #define ARENA_IMPL
 #define ENV_IMPL
 #define COLORS_IMPL
@@ -62,8 +61,8 @@ __asm__(
 #include <libfam/date.h>
 #include <libfam/env.h>
 #include <libfam/fmt.h>
-#include <libfam/format.h>
 #include <libfam/storm.h>
+#include <libfam/string.h>
 
 i32 cur_tests = 0, cur_benches = 0, exe_test = 0;
 bool is_bench = false;
@@ -112,10 +111,10 @@ static int run_tests(char **envp) {
 		if (timer < 1000)
 			println(" {}[{}µs]{}", GREEN, timer, RESET);
 		else if (timer < 1000000)
-			println(" {}[{:.2}ms]{}", YELLOW, (f64)timer / 1000.0,
+			println(" {}[{.2}ms]{}", YELLOW, (f64)timer / 1000.0,
 				RESET);
 		else
-			println(" {}[{:.2}s]{}", BOLD_RED,
+			println(" {}[{.2}s]{}", BOLD_RED,
 				(f64)timer / 1000000.0, RESET);
 	}
 	global_timer = micros() - global_timer;
@@ -125,11 +124,11 @@ static int run_tests(char **envp) {
 			BOLD_GREEN, RESET, cur_tests, BOLD_BLUE, RESET, GREEN,
 			global_timer, RESET);
 	else if (global_timer < 1000000)
-		println("{}Success!{} {} {}tests passed!{} {}[{:.2}ms]{}",
+		println("{}Success!{} {} {}tests passed!{} {}[{.2}ms]{}",
 			BOLD_GREEN, RESET, cur_tests, BOLD_BLUE, RESET, YELLOW,
 			(f64)global_timer / 1000.0, RESET);
 	else
-		println("{}Success!{} {} {}tests passed!{} {}[{:.2}s]{}",
+		println("{}Success!{} {} {}tests passed!{} {}[{.2}s]{}",
 			BOLD_GREEN, RESET, cur_tests, BOLD_BLUE, RESET, RED,
 			(f64)global_timer / 1000000.0, RESET);
 
@@ -161,7 +160,7 @@ static i32 run_benches(char **envp) {
 	}
 	global_timer = micros() - global_timer;
 	println("{}", SPACER);
-	println("{}Success!{} {} {}benches passed!{} {}[{:.2}s]{}", BOLD_GREEN,
+	println("{}Success!{} {} {}benches passed!{} {}[{.2}s]{}", BOLD_GREEN,
 		RESET, cur_benches, BOLD_BLUE, RESET, GREEN,
 		(f64)global_timer / 1000000.0, RESET);
 

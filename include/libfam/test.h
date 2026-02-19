@@ -27,7 +27,7 @@
 #define _TEST_H
 
 #include <libfam/colors.h>
-#include <libfam/format.h>
+#include <libfam/fmt.h>
 #include <libfam/syscall.h>
 #include <libfam/sysext.h>
 #include <libfam/types.h>
@@ -63,20 +63,20 @@ const char *get_active(void);
 #define ASSERT_EQ(x, y, ...)                                                   \
 	({                                                                     \
 		if ((x) != (y)) {                                              \
-			Formatter fmt = FORMATTER_INIT;                        \
+			Fmt fmt = {0};                                         \
 			__VA_OPT__(FORMAT(&fmt, __VA_ARGS__);)                 \
 			panic("{}{}{}: [{}]. '{}'", BOLD_RED, __assertion_msg, \
-			      RESET, get_active(), format_to_string(&fmt));    \
+			      RESET, get_active(), fmt_to_string(&fmt));       \
 		}                                                              \
 	})
 
 #define ASSERT(x, ...)                                                         \
 	({                                                                     \
 		if (!(x)) {                                                    \
-			Formatter fmt = FORMATTER_INIT;                        \
+			Fmt fmt = {0};                                         \
 			__VA_OPT__(FORMAT(&fmt, __VA_ARGS__);)                 \
 			panic("{}{}{}: [{}]. '{}'", BOLD_RED, __assertion_msg, \
-			      RESET, get_active(), format_to_string(&fmt));    \
+			      RESET, get_active(), fmt_to_string(&fmt));       \
 		}                                                              \
 	})
 

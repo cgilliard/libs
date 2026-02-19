@@ -210,7 +210,6 @@ PUBLIC i32 getsockname(i32 sockfd, struct sockaddr *addr, u64 *addrlen) {
 
 /* GCOVR_EXCL_START */
 #ifdef TEST
-#include <libfam/format.h>
 #include <libfam/limits.h>
 #include <libfam/mmap.h>
 #include <libfam/test.h>
