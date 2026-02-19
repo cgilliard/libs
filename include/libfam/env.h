@@ -56,6 +56,7 @@ void _debug_remove_env(const char *key, char *value);
 
 #include <libfam/debug.h>
 #include <libfam/errno.h>
+#include <libfam/format.h>
 #include <libfam/rbtree.h>
 #include <libfam/string.h>
 #include <libfam/syscall.h>
@@ -114,6 +115,9 @@ PUBLIC char *getenv(const char *name) {
 PUBLIC i32 init_environ(char **envp, Arena *a) {
 	u64 i;
 	RbTree *ptr;
+
+	if (a->align < 8)
+		panic("init_environ: alignment of arena must be at least 8!");
 #ifdef TEST
 	ptr = _debug_env_rbtree ? _debug_env_rbtree : &__env_tree;
 #else
@@ -197,13 +201,27 @@ Test(test_special_cases) {
 	_debug_env_rbtree = NULL;
 	arena_destroy(a);
 
-	arena_init(&a, 8, 1);
+	arena_init(&a, 8, 8);
 	_debug_env_rbtree = &tree;
 	envp[0] = "abc=def";
 	envp[1] = NULL;
 	ASSERT_EQ(init_environ(envp, a), -ENOMEM, "enomem");
 	_debug_env_rbtree = NULL;
 	arena_destroy(a);
+
+	_debug_no_exit = true;
+	_debug_no_write = true;
+
+	arena_init(&a, 1024, 4);
+	_debug_env_rbtree = &tree;
+	envp[0] = "abc=";
+	envp[1] = NULL;
+	ASSERT(!init_environ(envp, a), "low align");
+	_debug_env_rbtree = NULL;
+	arena_destroy(a);
+
+	_debug_no_write = false;
+	_debug_no_exit = false;
 }
 
 #endif /* TEST */
