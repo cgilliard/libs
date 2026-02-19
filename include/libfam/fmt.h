@@ -371,6 +371,7 @@ static i32 fmt_parse_placeholder(const char **np, FmtSpec *spec) {
 			}
 
 			result = string_to_u128(*np - len, len, &v);
+
 			if (result < 0) goto cleanup;
 			if (v > MAX_PRECISION) {
 				result = -EPROTO;
@@ -694,6 +695,7 @@ PUBLIC const char *fmt_to_string(Fmt *f) {
 
 /* GCOVR_EXCL_START */
 #ifdef TEST
+#include <libfam/debug.h>
 #include <libfam/test.h>
 
 Test(fmt1) {
@@ -1001,6 +1003,10 @@ Test(fmt4) {
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "has precision");
 	fmt_clear(&f);
 
+	FORMAT(&f, "{c}", "abc");
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "has type");
+	fmt_clear(&f);
+
 	FORMAT(&f, "{.3}", 30U);
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "has precision");
 	fmt_clear(&f);
@@ -1051,6 +1057,39 @@ Test(fmt6) {
 	Fmt f = {0};
 	FORMAT(&f, "{");
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "unexpected end");
+	fmt_clear(&f);
+}
+
+Test(fmt7) {
+	u64 i;
+	i64 result;
+	char buf[PAGE_SIZE];
+	char cmp[PAGE_SIZE + 2] = {0};
+	Fmt f = {0};
+
+	memset(buf, 'x', PAGE_SIZE);
+	buf[PAGE_SIZE - 1] = 0;
+	fmt_append(&f, "y");
+	FORMAT(&f, "{}", buf);
+
+	cmp[0] = 'y';
+	memcpy(cmp + 1, buf, PAGE_SIZE);
+	ASSERT(!strcmp(cmp, fmt_to_string(&f)), "big buf");
+
+	fmt_clear(&f);
+
+	_debug_alloc_failure = 0;
+	result = FORMAT(&f, "abc");
+	ASSERT_EQ(result, -ENOMEM, "enomem");
+	_debug_alloc_failure = I64_MAX;
+	fmt_clear(&f);
+
+	FORMAT(&f, "{.340282366920938463463374607431768211456000}", 1.1);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "too much precision");
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:340282366920938463463374607431768211456000}", 1.1);
+	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "too much width");
 	fmt_clear(&f);
 }
 

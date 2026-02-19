@@ -241,6 +241,7 @@ PUBLIC u8 f64_to_string(char buf[MAX_F64_STRING_LEN], f64 v, i32 max_decimals,
 }
 
 PUBLIC i32 string_to_u128(const char *buf, u64 len, u128 *result) {
+	bool has_val = false;
 	u128 res = 0;
 	u64 i = 0;
 	u8 c;
@@ -253,7 +254,9 @@ PUBLIC i32 string_to_u128(const char *buf, u64 len, u128 *result) {
 		if (c < '0' || c > '9') return -EINVAL;
 		if (res > U128_MAX / 10) return -EOVERFLOW;
 		res = res * 10 + (c - '0');
+		if (has_val && res == 0) return -EOVERFLOW;
 		i++;
+		has_val |= res;
 	}
 	*result = res;
 	return 0;
@@ -555,7 +558,7 @@ Test(string_u128) {
 		u128 vout;
 		u128_to_string(buf, v, Int128DisplayTypeDecimal);
 		string_to_u128(buf, strlen(buf), &vout);
-		ASSERT_EQ(v, vout, "v=vout");
+		ASSERT_EQ(v, vout, "v=vout, {}", i);
 	}
 
 	ASSERT_EQ(i128_to_string(buf, 0x123, Int128DisplayTypeHexUpper), 5,

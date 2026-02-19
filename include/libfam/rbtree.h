@@ -188,7 +188,7 @@ static i32 rbtree_put_impl(RbTree *tree, RbTreeNodePair *pair,
 
 static RbTreeNode *rbtree_find_successor(RbTreeNode *x) {
 	x = RIGHT(x);
-	while (x && LEFT(x)) x = LEFT(x);
+	while (LEFT(x)) x = LEFT(x);
 	return x;
 }
 
@@ -204,7 +204,7 @@ static void rbtree_remove_transplant(RbTree *tree, RbTreeNode *dst,
 }
 
 static void rbtree_set_color(RbTreeNode *child, RbTreeNode *parent) {
-	if (IS_RED(parent))
+	if (((u64)parent->parent_color & 0x1))
 		SET_RED(child);
 	else
 		SET_BLACK(child);
@@ -387,14 +387,6 @@ i32 test_rbsearch(RbTreeNode *cur, const RbTreeNode *value,
 	}
 	return 0;
 }
-
-#define PARENT(node) ((RbTreeNode *)((u64)node->parent_color & ~0x1))
-#define RIGHT(node) node->right
-#define LEFT(node) node->left
-#define ROOT(tree) (tree->root)
-#define IS_RED(node) (node && ((u64)node->parent_color & 0x1))
-#define IS_BLACK(node) !IS_RED(node)
-#define ROOT(tree) (tree->root)
 
 static bool check_root_black(RbTree *tree) {
 	if (!ROOT(tree)) return true;
@@ -587,7 +579,7 @@ Test(rbtree4) {
 	validate_rbtree(&tree);
 	ASSERT(tree.root, "not empty");
 
-	for (i = COUNT; i < COUNT * 2; i++) {
+	for (i = COUNT * 2 - 1; i >= COUNT; i--) {
 		ASSERT(rbtree_remove(&tree, (RbTreeNode *)&nodes[i],
 				     test_rbsearch),
 		       "found {}", i);
