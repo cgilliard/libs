@@ -632,12 +632,13 @@ cleanup:
 	return result;
 }
 
-static i32 fmt_proc_placeholder(Fmt *f, const char **np, const FmtItem *item) {
+static i32 fmt_proc_placeholder(Fmt *f, const char **np, FmtItem *item,
+				__builtin_va_list *args) {
 	i32 result;
 	FmtSpec spec = {0};
-	if (!item) return -EFAULT;
 
 	result = fmt_parse_placeholder(np, &spec);
+	*item = __builtin_va_arg(*args, FmtItem);
 	if (result < 0) return fmt_proc_err(f);
 	if (item->t == FmtIntType) return fmt_proc_int_type(f, item, &spec);
 	if (item->t == FmtStringType)
@@ -645,6 +646,7 @@ static i32 fmt_proc_placeholder(Fmt *f, const char **np, const FmtItem *item) {
 	if (item->t == FmtUIntType) return fmt_proc_uint_type(f, item, &spec);
 	if (item->t == FmtFloatType) return fmt_proc_float_type(f, item, &spec);
 	return -EPROTO;
+	(void)args;
 }
 
 PUBLIC i32 fmt_append(Fmt *f, const char *p, ...) {
@@ -658,14 +660,15 @@ PUBLIC i32 fmt_append(Fmt *f, const char *p, ...) {
 		if (*p == '{') {
 			result = fmt_append_raw(f, start, p - start);
 			if (result < 0) goto cleanup;
-			if (*(p + 1) >= 'A' && *(p + 1) < 'X') {
-			} else if (*(p + 1) == '{') {
+			if (*(p + 1) == '{') {
 				fmt_append_raw(f, "{", 1);
 				p += 2;
 				start = p;
 			} else {
-				FmtItem next = __builtin_va_arg(args, FmtItem);
-				result = fmt_proc_placeholder(f, &p, &next);
+				FmtItem
+				    next; /*= __builtin_va_arg(args, FmtItem);*/
+				result =
+				    fmt_proc_placeholder(f, &p, &next, &args);
 				if (result < 0) goto cleanup;
 				start = p;
 			}
@@ -1046,7 +1049,7 @@ Test(fmt5) {
 
 Test(fmt6) {
 	Fmt f = {0};
-	FORMAT(&f, "{", "x");
+	FORMAT(&f, "{");
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "unexpected end");
 	fmt_clear(&f);
 }
