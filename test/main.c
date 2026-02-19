@@ -53,11 +53,13 @@ __asm__(
 #define ERRNO_IMPL
 #define STORM_IMPL
 #define FMT_IMPL
+#define DATE_IMPL
 #endif
 
 #include <libfam/aesenc.h>
 #include <libfam/arena.h>
 #include <libfam/colors.h>
+#include <libfam/date.h>
 #include <libfam/env.h>
 #include <libfam/fmt.h>
 #include <libfam/format.h>

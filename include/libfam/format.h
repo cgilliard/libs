@@ -517,7 +517,7 @@ static i32 format_proc_float(Formatter *f, const FormatSpec *spec, f64 value) {
 
 	raw_bytes =
 	    f64_to_string(buf, value, spec->has_precision ? spec->precision : 5,
-			  spec->t == FormatSpecTypeCommas);
+			  spec->t == FormatSpecTypeCommas, false);
 	return format_proc_padding(f, spec, buf, raw_bytes);
 }
 

@@ -395,7 +395,7 @@ static i32 fmt_proc_float_type(Fmt *f, const FmtItem *item,
 	bool commas = spec->t == FmtSpecTypeCommas;
 	char buf[MAX_F64_STRING_LEN];
 
-	len = f64_to_string(buf, item->data.fvalue, prec, commas);
+	len = f64_to_string(buf, item->data.fvalue, prec, commas, false);
 
 	if (spec->has_alignment && spec->align == FmtAlignRight &&
 	    len < spec->width) {
@@ -674,8 +674,6 @@ Test(fmt1) {
 	ASSERT(!strcmp(fmt_to_string(&f), "x           9,999.331x"),
 	       "x           9,999.331x");
 	fmt_clear(&f);
-
-	println("{}test1{}", BOLD_BRIGHT_CYAN, RESET);
 }
 
 #endif /* TEST */
