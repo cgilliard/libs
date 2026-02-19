@@ -108,11 +108,7 @@ case "$ARCH" in
 	fi
         ;;
     aarch64|arm64|armv8*)
-        if [ "${VALGRIND}" = "1" ]; then
-            ARCH_FLAGS="-march=armv8-a+crypto -mno-outline-atomics"
-        else
-            ARCH_FLAGS="-march=${MARCH} -mno-outline-atomics"
-	fi
+        ARCH_FLAGS="-march=armv8-a+crypto -mno-outline-atomics"
         ;;
     *)
         ARCH_FLAGS="-march=${MARCH}"
