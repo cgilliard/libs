@@ -124,8 +124,9 @@ static void rbtree_rotate_left(RbTree *tree, RbTreeNode *x) {
 
 static void rbtree_insert_fixup(RbTree *tree, RbTreeNode *k) {
 	RbTreeNode *parent, *gparent, *uncle;
-	while (!IS_ROOT(tree, k) && IS_RED(PARENT(k))) {
+	while (!IS_ROOT(tree, k)) {
 		parent = PARENT(k);
+		if (!((u64)parent->parent_color & 0x1)) break;
 		gparent = PARENT(parent);
 		if (parent == LEFT(gparent)) {
 			uncle = RIGHT(gparent);
@@ -214,7 +215,7 @@ static void rbtree_remove_fixup(RbTree *tree, RbTreeNode *p, RbTreeNode *w,
 				RbTreeNode *x) {
 	while (!IS_ROOT(tree, x) && IS_BLACK(x)) {
 		if (w == RIGHT(p)) {
-			if (IS_RED(w)) {
+			if (((u64)w->parent_color & 0x1)) {
 				SET_BLACK(w);
 				SET_RED(p);
 				rbtree_rotate_left(tree, p);
@@ -245,7 +246,7 @@ static void rbtree_remove_fixup(RbTree *tree, RbTreeNode *p, RbTreeNode *w,
 				x = ROOT(tree);
 			}
 		} else {
-			if (IS_RED(w)) {
+			if (((u64)w->parent_color & 0x1)) {
 				SET_BLACK(w);
 				SET_RED(p);
 				rbtree_rotate_right(tree, p);
@@ -283,7 +284,7 @@ static void rbtree_remove_fixup(RbTree *tree, RbTreeNode *p, RbTreeNode *w,
 
 static void rbtree_remove_impl(RbTree *tree, RbTreeNodePair *pair) {
 	RbTreeNode *node_to_delete = pair->self;
-	i32 do_fixup = IS_BLACK(node_to_delete);
+	i32 do_fixup = !((u64)node_to_delete->parent_color & 0x1);
 	RbTreeNode *x = 0, *w = 0, *p = 0;
 
 	if (LEFT(node_to_delete) == 0) {
@@ -307,7 +308,7 @@ static void rbtree_remove_impl(RbTree *tree, RbTreeNodePair *pair) {
 		if (p) w = LEFT(p);
 	} else {
 		RbTreeNode *successor = rbtree_find_successor(node_to_delete);
-		do_fixup = IS_BLACK(successor);
+		do_fixup = !((u64)successor->parent_color & 0x1);
 		x = RIGHT(successor);
 		w = RIGHT(PARENT(successor));
 		if (w) {
@@ -322,6 +323,7 @@ static void rbtree_remove_impl(RbTree *tree, RbTreeNodePair *pair) {
 			rbtree_remove_transplant(tree, successor,
 						 RIGHT(successor));
 			SET_RIGHT(successor, RIGHT(node_to_delete));
+
 			if (RIGHT(successor))
 				SET_PARENT(RIGHT(successor), successor);
 		}
