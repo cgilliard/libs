@@ -464,6 +464,20 @@ Test(storm_cipher_vector) {
 	ASSERT(!memcmp(buffer2, expected2, 32), "expected2");
 }
 
+Test(verify_nums) {
+	u64 v[] = {0x2d358dccaa6c78a5, 0x8bb84b93962eacc9, 0x4b33a62ed433d4a3,
+		   0x4d5a2da51de1aa47};
+	u64 vext[20];
+	memcpy(vext, v, sizeof(v));
+	u64 state = v[0] ^ v[1] ^ v[2] ^ v[3];
+	for (u32 i = 4; i < 20; i++) {
+		vext[i] = state;
+		state ^= vext[i - 1] * vext[i - 2];
+	}
+	for (u32 i = 0; i < 20; i++)
+		ASSERT_EQ(STORM_NUMS[i], vext[i], "storm nums");
+}
+
 Bench(storm) {
 #define COUNT (10000000000 / 32)
 	static __attribute__((aligned(32))) u8 ZERO_SEED[32] = {0};
