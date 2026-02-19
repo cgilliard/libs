@@ -954,7 +954,6 @@ Test(fmt3) {
 }
 
 Test(fmt4) {
-	/*
 	Fmt f = {0};
 	FORMAT(&f, "{.1.2}", 1.1);
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "two .");
@@ -990,6 +989,8 @@ Test(fmt4) {
 	FORMAT(&f, "{nn}", 11);
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "already specified");
 	fmt_clear(&f);
+
+	/*
 
 	FORMAT(&f, "{tt}", 11);
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "already specified");
