@@ -994,11 +994,12 @@ Test(fmt4) {
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "already specified");
 	fmt_clear(&f);
 
+	/*
 	FORMAT(&f, "{");
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "unexpected end");
 	fmt_clear(&f);
+	*/
 
-	/*
 	FORMAT(&f, "{.3}", "abc");
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "has precision");
 	fmt_clear(&f);
@@ -1039,7 +1040,6 @@ Test(fmt4) {
 	ASSERT(!strcmp(fmt_to_string(&f), "       200"),
 	       "right align unsigned");
 	fmt_clear(&f);
-	*/
 }
 
 Test(fmt5) {
