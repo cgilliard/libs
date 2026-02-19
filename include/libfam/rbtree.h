@@ -294,7 +294,7 @@ static void rbtree_remove_impl(RbTree *tree, RbTreeNodePair *pair) {
 		if (p) {
 			if (p->left == 0)
 				w = RIGHT(p);
-			else if (p)
+			else
 				w = LEFT(p);
 		} else {
 			do_fixup = 0;
