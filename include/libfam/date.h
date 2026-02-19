@@ -84,10 +84,8 @@ static void unix_to_tm(u64 timestamp, u32 *year, u32 *month, u32 *day,
 	*day = days + 1;
 }
 
-#include <libfam/format.h>
-
 PUBLIC void date_calc(char buffer[MAX_DATE_LEN], u64 micros, u8 precision) {
-	u8 *b = buffer;
+	char *b = buffer;
 	u8 len;
 	u32 year, month, day, hour, min, sec;
 	unix_to_tm(micros / 1000000, &year, &month, &day, &hour, &min, &sec);
