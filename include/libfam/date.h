@@ -31,7 +31,9 @@
 #define MAX_SECOND_PRECISION 6
 #define MAX_DATE_LEN (MAX_SECOND_PRECISION + 30)
 
-void date_calc(char buffer[MAX_DATE_LEN], u64 micros, u8 precision);
+u8 date_calc(char buffer[MAX_DATE_LEN], u64 micros, u8 precision);
+void unix_to_tm(u64 timestamp, u32 *year, u32 *month, u32 *day, u32 *hour,
+		u32 *min, u32 *sec);
 
 #endif /* _DATE_H */
 
@@ -49,7 +51,7 @@ static bool is_leap_year(u32 y) {
 static const u64 days_in_month[12] = {31, 28, 31, 30, 31, 30,
 				      31, 31, 30, 31, 30, 31};
 
-static void unix_to_tm(u64 timestamp, u32 *year, u32 *month, u32 *day,
+PUBLIC void unix_to_tm(u64 timestamp, u32 *year, u32 *month, u32 *day,
 		       u32 *hour, u32 *min, u32 *sec) {
 	u64 days = timestamp / 86400;
 	u64 rem = timestamp % 86400;
@@ -84,7 +86,7 @@ static void unix_to_tm(u64 timestamp, u32 *year, u32 *month, u32 *day,
 	*day = days + 1;
 }
 
-PUBLIC void date_calc(char buffer[MAX_DATE_LEN], u64 micros, u8 precision) {
+PUBLIC u8 date_calc(char buffer[MAX_DATE_LEN], u64 micros, u8 precision) {
 	char *b = buffer;
 	u8 len;
 	u32 year, month, day, hour, min, sec;
@@ -130,6 +132,7 @@ PUBLIC void date_calc(char buffer[MAX_DATE_LEN], u64 micros, u8 precision) {
 		}
 	}
 	*b = 0;
+	return b - buffer;
 }
 
 #ifdef TEST

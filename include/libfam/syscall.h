@@ -228,9 +228,10 @@ Test(mmap) {
 }
 
 Test(clone) {
-	i32 pid = clone(0, NULL);
+	i32 pid = clone(17, NULL);
 	if (!pid) exit_group(0);
 	ASSERT(pid);
+	waitpid(pid);
 }
 
 Test(gettime) {

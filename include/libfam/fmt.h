@@ -33,6 +33,183 @@
 #define MAX_PRECISION 32
 #define MAX_WIDTH 4096
 
+/*
+#pragma GCC diagnostic push
+#ifdef __clang__
+#pragma GCC diagnostic ignored \
+    "-Wincompatible-pointer-types-discards-qualifiers"
+#else
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+#endif */ /* !__clang__ */
+
+#define FORMAT_ITEM1(ign, value)                                               \
+	({                                                                     \
+		FmtItem _p__ = _Generic((value),                               \
+		    char: ((FmtItem){                                          \
+			.t = FmtIntType,                                       \
+			.data.ivalue =                                         \
+			    _Generic((value), char: (value), default: 0)}),    \
+		    signed char: ((FmtItem){.t = FmtIntType,                   \
+					    .data.ivalue = _Generic((value),   \
+					    signed char: (value),              \
+					    default: 0)}),                     \
+		    short int: ((FmtItem){.t = FmtIntType,                     \
+					  .data.ivalue = _Generic((value),     \
+					  short int: (value),                  \
+					  default: 0)}),                       \
+		    int: ((FmtItem){                                           \
+			.t = FmtIntType,                                       \
+			.data.ivalue =                                         \
+			    _Generic((value), int: (value), default: 0)}),     \
+		    long: ((FmtItem){                                          \
+			.t = FmtIntType,                                       \
+			.data.ivalue =                                         \
+			    _Generic((value), long: (value), default: 0)}),    \
+		    long long: ((FmtItem){.t = FmtIntType,                     \
+					  .data.ivalue = _Generic((value),     \
+					  long long: (value),                  \
+					  default: 0)}),                       \
+		    __int128_t: ((FmtItem){.t = FmtIntType,                    \
+					   .data.ivalue = _Generic((value),    \
+					   __int128_t: (value),                \
+					   default: 0)}),                      \
+		    unsigned char: ((FmtItem){.t = FmtUIntType,                \
+					      .data.uvalue = _Generic((value), \
+					      unsigned char: (value),          \
+					      default: 0)}),                   \
+		    unsigned short int: ((FmtItem){                            \
+			.t = FmtUIntType,                                      \
+			.data.uvalue = _Generic((value),                       \
+			unsigned short int: (value),                           \
+			default: 0)}),                                         \
+		    unsigned int: ((FmtItem){.t = FmtUIntType,                 \
+					     .data.uvalue = _Generic((value),  \
+					     unsigned int: (value),            \
+					     default: 0)}),                    \
+		    unsigned long: ((FmtItem){.t = FmtUIntType,                \
+					      .data.uvalue = _Generic((value), \
+					      unsigned long: (value),          \
+					      default: 0)}),                   \
+		    unsigned long long: ((FmtItem){                            \
+			.t = FmtUIntType,                                      \
+			.data.uvalue = _Generic((value),                       \
+			unsigned long long: (value),                           \
+			default: 0)}),                                         \
+		    __uint128_t: ((FmtItem){.t = FmtUIntType,                  \
+					    .data.uvalue = _Generic((value),   \
+					    __uint128_t: (value),              \
+					    default: 0)}),                     \
+		    char *: ((FmtItem){.t = FmtStringType,                     \
+				       .data.svalue = _Generic((value),        \
+				       char *: (value),                        \
+				       default: NULL)}),                       \
+		    const char *: ((FmtItem){.t = FmtStringType,               \
+					     .data.svalue = _Generic((value),  \
+					     const char *: (value),            \
+					     default: NULL)}),                 \
+		    signed char *: ((FmtItem){.t = FmtStringType,              \
+					      .data.svalue = _Generic((value), \
+					      char *: (value),                 \
+					      default: NULL)}),                \
+		    u8 *: ((FmtItem){.t = FmtStringType,                       \
+				     .data.svalue = _Generic((value),          \
+				     const u8 *: (value),                      \
+				     u8 *: (value),                            \
+				     default: NULL)}),                         \
+		    const u8 *: ((FmtItem){.t = FmtStringType,                 \
+					   .data.svalue = _Generic((value),    \
+					   const u8 *: (value),                \
+					   default: NULL)}),                   \
+		    void *: ((FmtItem){.t = FmtUIntType,                       \
+				       .data.uvalue = _Generic((value),        \
+				       void *: ((u64)value),                   \
+				       default: 0)}),                          \
+		    double: ((FmtItem){.t = FmtFloatType,                      \
+				       .data.fvalue = _Generic((value),        \
+				       double: (value),                        \
+				       default: 0.0)}),                        \
+		    float: ((FmtItem){                                         \
+			.t = FmtFloatType,                                     \
+			.data.fvalue =                                         \
+			    _Generic((value), float: (value), default: 0.0)}), \
+		    default: ((FmtItem){                                       \
+			.t = FmtStringType,                                    \
+			.data.svalue = (char *)"unsupported"}));               \
+		_p__;                                                          \
+	})
+
+#ifdef __clang__
+#define FORMAT1(f, fmt, ...)                                                   \
+	({                                                                     \
+		_Pragma("GCC diagnostic push");                                \
+		/* clang-format off */                                       \
+                _Pragma("GCC diagnostic ignored \"-Wincompatible-pointer-types-discards-qualifiers\""); \
+		/* clang-format on */                                          \
+		fmt_append(f, fmt __VA_OPT__(, FOR_EACH(FORMAT_ITEM1, _, (, ), \
+							__VA_ARGS__)));        \
+		_Pragma("GCC diagnostic pop");                                 \
+	})
+#else
+#define FORMAT1(f, fmt, ...)                                                   \
+	({                                                                     \
+		_Pragma("GCC diagnostic push");                                \
+		_Pragma("GCC diagnostic ignored \"-Wdiscarded-qualifiers\"");  \
+		fmt_append(f, fmt __VA_OPT__(, FOR_EACH(FORMAT_ITEM1, _, (, ), \
+							__VA_ARGS__)));        \
+		_Pragma("GCC diagnostic pop");                                 \
+	})
+#endif
+
+#define write_all1(fd, s, len)                                       \
+	({                                                           \
+		u64 _wlen__ = 0, _to_write__ = len;                  \
+		while (_wlen__ < _to_write__) {                      \
+			i64 _result__ =                              \
+			    pwrite(1, s + _wlen__, _to_write__, -1); \
+			if (_result__ < 0) break;                    \
+			_wlen__ += _result__;                        \
+			_to_write__ -= _result__;                    \
+		}                                                    \
+	})
+
+#define println1(fmt, ...)                                                   \
+	({                                                                   \
+		const char *_tmp__;                                          \
+		Fmt _f__ = {0};                                              \
+		if (FORMAT1(&_f__, fmt, __VA_ARGS__) >= 0) {                 \
+			if (fmt_append(&_f__, "\n") >= 0) {                  \
+				_tmp__ = fmt_to_string(&_f__);               \
+				if (_tmp__) write_all1(1, _tmp__, _f__.pos); \
+			}                                                    \
+		}                                                            \
+		fmt_clear(&_f__);                                            \
+	})
+
+#define print1(fmt, ...)                                             \
+	({                                                           \
+		const char *_tmp__;                                  \
+		Fmt _f__ = {0};                                      \
+		if (FORMAT1(&_f__, fmt, __VA_ARGS__) >= 0) {         \
+			_tmp__ = fmt_to_string(&_f__);               \
+			if (_tmp__) write_all1(1, _tmp__, _f__.pos); \
+		}                                                    \
+		fmt_clear(&_f__);                                    \
+	})
+
+#define panic1(fmt, ...)                                                     \
+	({                                                                   \
+		const char *_tmp__;                                          \
+		Fmt _f__ = {0};                                              \
+		if (FORMAT1(&_f__, fmt, __VA_ARGS__) >= 0) {                 \
+			if (fmt_append(&_f__, "\n") >= 0) {                  \
+				_tmp__ = fmt_to_string(&_f__);               \
+				if (_tmp__) write_all1(2, _tmp__, _f__.pos); \
+			}                                                    \
+		}                                                            \
+		fmt_clear(&_f__);                                            \
+		exit_group(-1);                                              \
+	})
+
 typedef struct {
 	char *buf;
 	u64 capacity;
@@ -66,6 +243,7 @@ const char *fmt_to_string(Fmt *f);
 #ifndef FMT_IMPL_GUARD
 #define FMT_IMPL_GUARD
 
+#include <libfam/date.h>
 #include <libfam/errno.h>
 #include <libfam/limits.h>
 #include <libfam/string.h>
@@ -90,6 +268,7 @@ typedef enum {
 	FmtSpecTypeHexLower,
 	FmtSpecTypeCommas,
 	FmtSpecTypeChar,
+	FmtSpecTypeTime,
 } FmtSpecType;
 
 typedef struct {
@@ -125,8 +304,6 @@ static i32 fmt_try_resize(Fmt *f, u64 len) {
 	}
 	return 0;
 }
-
-#include <libfam/format.h>
 
 static i32 fmt_append_raw(Fmt *f, const char *buf, u64 len) {
 	i32 result = fmt_try_resize(f, len);
@@ -241,6 +418,12 @@ static i32 fmt_parse_placeholder(const char **np, FmtSpec *spec) {
 				goto cleanup;
 			}
 			spec->t = FmtSpecTypeChar;
+		} else if (**np == 't') {
+			if (spec->t) {
+				result = -EPROTO;
+				goto cleanup;
+			}
+			spec->t = FmtSpecTypeTime;
 		} else {
 			result = -EPROTO;
 			goto cleanup;
@@ -293,12 +476,15 @@ static i32 fmt_proc_int_type(Fmt *f, const FmtItem *item, const FmtSpec *spec) {
 	i32 result = 0;
 	char buf[MAX_I128_STRING_LEN];
 
-	if (spec->has_precision) {
+	if (spec->has_precision && spec->t != FmtSpecTypeTime) {
 		result = fmt_append_raw(f, "<?>", 3);
 		goto cleanup;
 	}
 
-	if (spec->t == FmtSpecTypeHexUpper)
+	if (spec->t == FmtSpecTypeTime) {
+		len = date_calc(buf, item->data.ivalue,
+				spec->has_precision ? spec->precision : 0);
+	} else if (spec->t == FmtSpecTypeHexUpper)
 		len = i128_to_string(buf, item->data.ivalue,
 				     Int128DisplayTypeHexUpper);
 	else if (spec->t == FmtSpecTypeHexLower)
@@ -438,8 +624,6 @@ PUBLIC i32 fmt_append(Fmt *f, const char *p, ...) {
 	__builtin_va_start(args, p);
 	while (*p) {
 		if (*p == '{') {
-			const FmtItem *next;
-
 			result = fmt_append_raw(f, start, p - start);
 			if (result < 0) goto cleanup;
 			if (*(p + 1) >= 'A' && *(p + 1) < 'X') {
@@ -448,8 +632,8 @@ PUBLIC i32 fmt_append(Fmt *f, const char *p, ...) {
 				p += 2;
 				start = p;
 			} else {
-				next = __builtin_va_arg(args, FmtItem *);
-				result = fmt_proc_placeholder(f, &p, next);
+				FmtItem next = __builtin_va_arg(args, FmtItem);
+				result = fmt_proc_placeholder(f, &p, &next);
 				if (result < 0) goto cleanup;
 				start = p;
 			}
@@ -487,22 +671,22 @@ Test(fmt1) {
 	ASSERT(!strcmp(fmt_to_string(&f), "abc"), "abc");
 	ASSERT(!fmt_append(&f, "def"), "fmt_append 2");
 	ASSERT(!strcmp(fmt_to_string(&f), "abcdef"), "abcdef");
-	ASSERT(!fmt_append(&f, " ok {} ", &x), "fmt_append 3");
+	ASSERT(!fmt_append(&f, " ok {} ", x), "fmt_append 3");
 	ASSERT(!strcmp(fmt_to_string(&f), "abcdef ok 123 "), "abcdef ok 123 ");
 	fmt_clear(&f);
 	x.data.ivalue = 0xFF;
-	ASSERT(!fmt_append(&f, "{X} ", &x), "fmt append 4");
+	ASSERT(!fmt_append(&f, "{X} ", x), "fmt append 4");
 	ASSERT(!strcmp(fmt_to_string(&f), "0xFF "), "0xFF ");
 	fmt_clear(&f);
-	ASSERT(!fmt_append(&f, "{x} ", &x), "fmt append 5");
+	ASSERT(!fmt_append(&f, "{x} ", x), "fmt append 5");
 	ASSERT(!strcmp(fmt_to_string(&f), "0xff "), "0xff ");
 	fmt_clear(&f);
-	ASSERT(!fmt_append(&f, "{b} ", &x), "fmt append 6");
+	ASSERT(!fmt_append(&f, "{b} ", x), "fmt append 6");
 	ASSERT(!strcmp(fmt_to_string(&f), "0b11111111 "),
 	       "0x1111111111111111 ");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "{b:20} ", &x), "fmt append 7");
+	ASSERT(!fmt_append(&f, "{b:20} ", x), "fmt append 7");
 	ASSERT_EQ(strlen(fmt_to_string(&f)), 21,
 		  "exp strlen=21(20 byte width + 1 trailing space) actual={}",
 		  strlen(fmt_to_string(&f)));
@@ -510,7 +694,7 @@ Test(fmt1) {
 	       "0b11111111           ");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "{b:<20} ", &x), "fmt append 8");
+	ASSERT(!fmt_append(&f, "{b:<20} ", x), "fmt append 8");
 	ASSERT_EQ(strlen(fmt_to_string(&f)), 21,
 		  "exp strlen=21(20 byte width + 1 trailing space) actual={}",
 		  strlen(fmt_to_string(&f)));
@@ -518,7 +702,7 @@ Test(fmt1) {
 	       "0b11111111           ");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "{b:>20} ", &x), "fmt append 9");
+	ASSERT(!fmt_append(&f, "{b:>20} ", x), "fmt append 9");
 	ASSERT_EQ(strlen(fmt_to_string(&f)), 21,
 		  "2exp strlen=21(20 byte width + 1 trailing space) actual={}",
 		  strlen(fmt_to_string(&f)));
@@ -527,152 +711,197 @@ Test(fmt1) {
 	fmt_clear(&f);
 
 	x.data.ivalue = 'a';
-	ASSERT(!fmt_append(&f, "{c}", &x), "fmt append 10");
+	ASSERT(!fmt_append(&f, "{c}", x), "fmt append 10");
 	ASSERT(!strcmp(fmt_to_string(&f), "a"), "a");
 	fmt_clear(&f);
 
 	x.data.ivalue = 999;
-	ASSERT(!fmt_append(&f, "{c}", &x), "fmt append 10.5");
+	ASSERT(!fmt_append(&f, "{c}", x), "fmt append 10.5");
 	ASSERT(!strcmp(fmt_to_string(&f), "?"), "?");
 	fmt_clear(&f);
 
 	x.data.ivalue = -88;
-	ASSERT(!fmt_append(&f, " {}", &x), "fmt append 11");
+	ASSERT(!fmt_append(&f, " {}", x), "fmt append 11");
 	ASSERT(!strcmp(fmt_to_string(&f), " -88"), " -88");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x={},y={},z={}", &x, &y, &z), "fmt append 12");
+	ASSERT(!fmt_append(&f, "x={},y={},z={}", x, y, z), "fmt append 12");
 	ASSERT(!strcmp(fmt_to_string(&f), "x=-88,y=-33,z=100000"),
 	       "x=-88,y=-33,z=100000");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x={::4} ", &x), "fmt append 13");
+	ASSERT(!fmt_append(&f, "x={::4} ", x), "fmt append 13");
 	ASSERT(!strcmp(fmt_to_string(&f), "x=<?> "), "x=<?> ");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x={:>4},y={..},a={q},z={}", &x, &y, &z, &z),
+	ASSERT(!fmt_append(&f, "x={:>4},y={..},a={q},z={}", x, y, z, z),
 	       "fmt append 14");
 	ASSERT(!strcmp(fmt_to_string(&f), "x= -88,y=<?>,a=<?>,z=100000"),
 	       "x= -88,y=<?>,a=<?>,z=100000");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x={:>4},y={.5},a={q},z={}", &x, &y, &z, &z),
+	ASSERT(!fmt_append(&f, "x={:>4},y={.5},a={q},z={}", x, y, z, z),
 	       "fmt append 15");
 	ASSERT(!strcmp(fmt_to_string(&f), "x= -88,y=<?>,a=<?>,z=100000"),
 	       "x= -88,y=<?>,a=<?>,z=100000");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "{n:10}", &z), "fmt append 16");
+	ASSERT(!fmt_append(&f, "{n:10}", z), "fmt append 16");
 	ASSERT(!strcmp(fmt_to_string(&f), "100,000   "), "100,000   ");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "{:10n}", &z), "fmt append 16");
+	ASSERT(!fmt_append(&f, "{:10n}", z), "fmt append 16");
 	ASSERT(!strcmp(fmt_to_string(&f), "100,000   "), "100,000   ");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "{:10X}", &z), "fmt append 17");
+	ASSERT(!fmt_append(&f, "{:10X}", z), "fmt append 17");
 	ASSERT(!strcmp(fmt_to_string(&f), "0x186A0   "), "0x186A0   ");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x{x:10}x", &z), "fmt append 18");
+	ASSERT(!fmt_append(&f, "x{x:10}x", z), "fmt append 18");
 	ASSERT(!strcmp(fmt_to_string(&f), "x0x186a0   x"), "x0x186a0   x");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x{x   ", &z), "fmt append 19");
+	ASSERT(!fmt_append(&f, "x{x   ", z), "fmt append 19");
 	ASSERT(!strcmp(fmt_to_string(&f), "x<?>"), "x<?>");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x{{  ", &z), "fmt append 20");
+	ASSERT(!fmt_append(&f, "x{{  ", z), "fmt append 20");
 	ASSERT(!strcmp(fmt_to_string(&f), "x{  "), "x{  ");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x{{{{  {{ }}", &z), "fmt append 21");
+	ASSERT(!fmt_append(&f, "x{{{{  {{ }}", z), "fmt append 21");
 	ASSERT(!strcmp(fmt_to_string(&f), "x{{  { }}"), "x{{  { }}");
 	fmt_clear(&f);
 
 	x.t = FmtStringType;
 	x.data.svalue = "ok123";
-	ASSERT(!fmt_append(&f, " {} ", &x), "fmt append 22");
+	ASSERT(!fmt_append(&f, " {} ", x), "fmt append 22");
 	ASSERT(!strcmp(fmt_to_string(&f), " ok123 "), " ok123 ");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x{:10}x", &x), "fmt append 23");
+	ASSERT(!fmt_append(&f, "x{:10}x", x), "fmt append 23");
 	ASSERT(!strcmp(fmt_to_string(&f), "xok123     x"), "xok123     x");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x{:<10}x", &x), "fmt append 23");
+	ASSERT(!fmt_append(&f, "x{:<10}x", x), "fmt append 23");
 	ASSERT(!strcmp(fmt_to_string(&f), "xok123     x"), "xok123     x");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x{:>10}x", &x), "fmt append 24");
+	ASSERT(!fmt_append(&f, "x{:>10}x", x), "fmt append 24");
 	ASSERT(!strcmp(fmt_to_string(&f), "x     ok123x"), "x     ok123x");
 	fmt_clear(&f);
 
 	x.t = FmtUIntType;
 	x.data.uvalue = 255;
 
-	ASSERT(!fmt_append(&f, "{x}", &x), "fmt append 25");
+	ASSERT(!fmt_append(&f, "{x}", x), "fmt append 25");
 	ASSERT(!strcmp(fmt_to_string(&f), "0xff"), "0xff");
 	fmt_clear(&f);
 
 	x.t = FmtFloatType;
 	x.data.fvalue = 7771.234567;
-	ASSERT(!fmt_append(&f, "{}", &x), "fmt append 26");
+	ASSERT(!fmt_append(&f, "{}", x), "fmt append 26");
 	ASSERT(!strcmp(fmt_to_string(&f), "7771.23457"), "7771.23457");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "{n}", &x), "fmt append 27");
+	ASSERT(!fmt_append(&f, "{n}", x), "fmt append 27");
 	ASSERT(!strcmp(fmt_to_string(&f), "7,771.23457"), "7,771.23457");
 	fmt_clear(&f);
 
 	x.data.fvalue = 9999.33;
-	ASSERT(!fmt_append(&f, "{n}", &x), "fmt append 28");
+	ASSERT(!fmt_append(&f, "{n}", x), "fmt append 28");
 	ASSERT(!strcmp(fmt_to_string(&f), "9,999.33"), "9,999.33");
 	fmt_clear(&f);
 
 	x.data.fvalue = 9999.3312342;
-	ASSERT(!fmt_append(&f, "{n}", &x), "fmt append 29");
+	ASSERT(!fmt_append(&f, "{n}", x), "fmt append 29");
 	ASSERT(!strcmp(fmt_to_string(&f), "9,999.33123"), "9,999.33123");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "{.3}", &x), "fmt append 29");
+	ASSERT(!fmt_append(&f, "{.3}", x), "fmt append 29");
 	ASSERT(!strcmp(fmt_to_string(&f), "9999.331"), "9999.331");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "{n.3}", &x), "fmt append 30");
+	ASSERT(!fmt_append(&f, "{n.3}", x), "fmt append 30");
 	ASSERT(!strcmp(fmt_to_string(&f), "9,999.331"), "9,999.331");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "{.3n}", &x), "fmt append 31");
+	ASSERT(!fmt_append(&f, "{.3n}", x), "fmt append 31");
 	ASSERT(!strcmp(fmt_to_string(&f), "9,999.331"), "9,999.331");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "{.3qn}", &x), "fmt append 32");
+	ASSERT(!fmt_append(&f, "{.3qn}", x), "fmt append 32");
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "<?>");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x{.3:20n}x", &x), "fmt append 33");
+	ASSERT(!fmt_append(&f, "x{.3:20n}x", x), "fmt append 33");
 	ASSERT_EQ(strlen(fmt_to_string(&f)), 22, "align");
 	ASSERT(!strcmp(fmt_to_string(&f), "x9,999.331           x"),
 	       "x9,999.331           x");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x{.3:>20n}x", &x), "fmt append 34");
+	ASSERT(!fmt_append(&f, "x{.3:>20n}x", x), "fmt append 34");
 	ASSERT_EQ(strlen(fmt_to_string(&f)), 22, "align");
 	ASSERT(!strcmp(fmt_to_string(&f), "x           9,999.331x"),
 	       "x           9,999.331x");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x{:>20n.3}x", &x), "fmt append 35");
+	ASSERT(!fmt_append(&f, "x{:>20n.3}x", x), "fmt append 35");
 	ASSERT_EQ(strlen(fmt_to_string(&f)), 22, "align");
 	ASSERT(!strcmp(fmt_to_string(&f), "x           9,999.331x"),
 	       "x           9,999.331x");
 	fmt_clear(&f);
 
-	ASSERT(!fmt_append(&f, "x{n:>20.3}x", &x), "fmt append 35");
+	ASSERT(!fmt_append(&f, "x{n:>20.3}x", x), "fmt append 35");
 	ASSERT_EQ(strlen(fmt_to_string(&f)), 22, "align");
 	ASSERT(!strcmp(fmt_to_string(&f), "x           9,999.331x"),
 	       "x           9,999.331x");
+	fmt_clear(&f);
+
+	x.t = FmtIntType;
+	x.data.ivalue = 1771492996944296;
+	y.t = FmtIntType;
+	y.data.ivalue = x.data.ivalue;
+
+	ASSERT(!fmt_append(&f, "[{t.3}] num={},x={}", x, y, z),
+	       "fmt append 36");
+	ASSERT(
+	    !strcmp(fmt_to_string(&f),
+		    "[2026-02-19 09:23:16.944] num=1771492996944296,x=100000"),
+	    "[2026-02-19 09:23:16.944] num=1771492996944296,x=100000");
+	fmt_clear(&f);
+
+	ASSERT(!fmt_append(&f, "[{t}] num={},x={}", x, y, z), "fmt append 36");
+	ASSERT(!strcmp(fmt_to_string(&f),
+		       "[2026-02-19 09:23:16] num=1771492996944296,x=100000"),
+	       "[2026-02-19 09:23:16.944] num=1771492996944296,x=100000");
+	fmt_clear(&f);
+}
+
+Test(fmt_item) {
+	Fmt f = {0};
+	FmtItem v = FORMAT_ITEM1(_, 1.2);
+	fmt_append(&f, "{}", v);
+	ASSERT(!strcmp(fmt_to_string(&f), "1.2"), "1.2");
+	fmt_clear(&f);
+}
+
+Test(FORMAT1) {
+	Fmt f = {0};
+	FORMAT1(&f, "a={},b={},c={},d={}", 1, -5, "test", 1.2);
+	ASSERT(!strcmp(fmt_to_string(&f), "a=1,b=-5,c=test,d=1.2"),
+	       "a=1,b=-5,c=test,d=1.2");
+	fmt_clear(&f);
+
+	u32 a = 1;
+	i32 b = -5;
+	const char *c = "test";
+	f64 d = 1.2;
+
+	FORMAT1(&f, "a={},b={},c={},d={}", a, b, c, d);
+	ASSERT(!strcmp(fmt_to_string(&f), "a=1,b=-5,c=test,d=1.2"),
+	       "a=1,b=-5,c=test,d=1.2");
 	fmt_clear(&f);
 }
 
