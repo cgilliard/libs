@@ -757,6 +757,11 @@ Test(fmt1) {
 	ASSERT(!strcmp(fmt_to_string(&f), "?"), "?");
 	fmt_clear(&f);
 
+	x.data.ivalue = -1;
+	ASSERT(!fmt_append(&f, "{c}", x), "fmt append 10.5");
+	ASSERT(!strcmp(fmt_to_string(&f), "?"), "?");
+	fmt_clear(&f);
+
 	x.data.ivalue = -88;
 	ASSERT(!fmt_append(&f, " {}", x), "fmt append 11");
 	ASSERT(!strcmp(fmt_to_string(&f), " -88"), " -88");
@@ -1091,6 +1096,103 @@ Test(fmt7) {
 	FORMAT(&f, "{:340282366920938463463374607431768211456000}", 1.1);
 	ASSERT(!strcmp(fmt_to_string(&f), "<?>"), "too much width");
 	fmt_clear(&f);
+}
+
+Test(fmt8) {
+	Fmt f = {0};
+	FORMAT(&f, "{:>4}", "abc");
+	ASSERT(!strcmp(fmt_to_string(&f), " abc"));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:<4}", "abc");
+	ASSERT(!strcmp(fmt_to_string(&f), "abc "));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:>4}", "abcdef");
+	ASSERT(!strcmp(fmt_to_string(&f), "abcdef"));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:<4}", "abcdef");
+	ASSERT(!strcmp(fmt_to_string(&f), "abcdef"));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:>4}", 123);
+	ASSERT(!strcmp(fmt_to_string(&f), " 123"));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:<4}", 123);
+	ASSERT(!strcmp(fmt_to_string(&f), "123 "));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:>4}", 123456);
+	ASSERT(!strcmp(fmt_to_string(&f), "123456"));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:<4}", 123456);
+	ASSERT(!strcmp(fmt_to_string(&f), "123456"));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:>4}", 123U);
+	ASSERT(!strcmp(fmt_to_string(&f), " 123"));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:<4}", 123U);
+	ASSERT(!strcmp(fmt_to_string(&f), "123 "));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:>4}", 123456U);
+	ASSERT(!strcmp(fmt_to_string(&f), "123456"));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{:<4}", 123456U);
+	ASSERT(!strcmp(fmt_to_string(&f), "123456"));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{.1:>4}", 1.2);
+	ASSERT(!strcmp(fmt_to_string(&f), " 1.2"));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{.1:<4}", 1.2);
+	ASSERT(!strcmp(fmt_to_string(&f), "1.2 "));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{.4:>4}", 1.2345);
+	ASSERT(!strcmp(fmt_to_string(&f), "1.2345"));
+	fmt_clear(&f);
+
+	FORMAT(&f, "{.4:<4}", 1.2345);
+	ASSERT(!strcmp(fmt_to_string(&f), "1.2345"));
+	fmt_clear(&f);
+
+	ASSERT_EQ(FORMAT(&f, NULL), -EINVAL, "NULL input");
+}
+
+Test(fmt9) {
+	Fmt f = {0};
+	_debug_alloc_failure = 0;
+	ASSERT_EQ(FORMAT(&f, "{:>4}", "abc"), -ENOMEM, "fail raw append");
+	_debug_alloc_failure = 0;
+	ASSERT_EQ(FORMAT(&f, "{:<4}", "abc"), -ENOMEM, "fail raw append");
+
+	_debug_alloc_failure = 0;
+	ASSERT_EQ(FORMAT(&f, "{:>4}", 123), -ENOMEM, "fail raw append");
+	_debug_alloc_failure = 0;
+	ASSERT_EQ(FORMAT(&f, "{:<4}", 123), -ENOMEM, "fail raw append");
+
+	_debug_alloc_failure = 0;
+	ASSERT_EQ(FORMAT(&f, "{:>4}", 123U), -ENOMEM, "fail raw append");
+	_debug_alloc_failure = 0;
+	ASSERT_EQ(FORMAT(&f, "{:<4}", 123U), -ENOMEM, "fail raw append");
+
+	_debug_alloc_failure = 0;
+	ASSERT_EQ(FORMAT(&f, "{:>4}", 1.2), -ENOMEM, "fail raw append");
+	_debug_alloc_failure = 0;
+	ASSERT_EQ(FORMAT(&f, "{:<4}", 1.2), -ENOMEM, "fail raw append");
+
+	_debug_alloc_failure = 0;
+	ASSERT_EQ(FORMAT(&f, " {}", 1), -ENOMEM, "fail raw append");
+
+	_debug_alloc_failure = I64_MAX;
 }
 
 #endif /* TEST */
