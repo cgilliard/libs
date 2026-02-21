@@ -65,15 +65,6 @@ struct io_uring_params {
 	struct io_cqring_offsets cq_off;
 };
 
-struct io_uring_rsrc_update2 {
-	u32 offset;
-	u32 resv;
-	u64 data;
-	u64 tags;
-	u32 nr;
-	u32 resv2;
-};
-
 struct io_uring_cqe {
 	u64 user_data;
 	i32 res;
