@@ -109,7 +109,8 @@ PUBLIC void *arena_alloc(Arena *__restrict a, u64 size) {
 	if (!a) return NULL;
 	to_alloc = (size + (a->align - 1)) & ~(a->align - 1);
 	if (to_alloc < size) return NULL;
-	if (a->current > a->end - to_alloc) return NULL;
+	if (a->current > a->end - to_alloc || to_alloc > (u64)a->end)
+		return NULL;
 	ret = a->current;
 	a->current += to_alloc;
 	return ret;
